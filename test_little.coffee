@@ -1,10 +1,18 @@
+write = -> process.stdout.write arguments...
 print = -> console.log arguments...
-assert = (cond) -> process.stdout.write if cond then '.' else 'F'
+assert = (cond) -> write if cond then '.' else 'F'
+assert_equal = (a, b) ->
+    if JSON.stringify(a) == JSON.stringify(b)
+        write '.'
+    else
+        write 'F\n'
+        console.log a
+        console.log b
 test = (name, func) ->
-    process.stdout.write "#{name}: "
+    write "#{name}: "
     func()
-    process.stdout.write '\n'
-skip = (mane, func) ->
+    write '\n'
+skip = (name, func) ->
 raises = (message, func) ->
     try
         func()
@@ -13,7 +21,7 @@ raises = (message, func) ->
         assert error == message
 
 
-{Cell, List} = require './little'
+{Cell, List} = require './little.coffee'
 
 
 test 'pair', ->
@@ -84,33 +92,33 @@ test 'is_eq', ->
 
 
 test 'read', ->
-    assert Cell.read('()')[0].null?
-    assert Cell.read('\n(\t ) ')[0].write() == '()'
-    assert Cell.read("'()")[0].write() == '(quote ())'
-    assert Cell.read('hai')[0].write() == 'hai'
-    assert Cell.read('(hai)')[0].write() == '(hai)'
-    assert Cell.read('(hai bye)')[0].write() == '(hai bye)'
-    assert Cell.read('(hai bye)')[1] == ''
-    assert Cell.read("'(hai bye)")[0].write() == '(quote (hai bye))'
-    assert Cell.read('(hai . bye)')[0].write() == '(hai . bye)'
-    assert Cell.read('(hai . bye)')[0].cdr.write() == 'bye'
+    assert Cell.read('()').null?
+    assert Cell.read('\n(\t ) ').write() == '()'
+    assert Cell.read("'()").write() == '(quote ())'
+    assert Cell.read('hai').write() == 'hai'
+    assert Cell.read('(hai)').write() == '(hai)'
+    assert Cell.read('(hai bye)').write() == '(hai bye)'
+    assert Cell._read('(hai bye)')[1] == ''
+    assert Cell.read("'(hai bye)").write() == '(quote (hai bye))'
+    assert Cell.read('(hai . bye)').write() == '(hai . bye)'
+    assert Cell.read('(hai . bye)').cdr.write() == 'bye'
     raises 'missing right paren', ->
         Cell.read('(')
     raises 'missing right paren', ->
         Cell.read('(hai ')
     raises 'no delimiter after dot', ->
         Cell.read('(hai .a)')
-    assert Cell.read('(define list\n  (lambda l l))')[0].write() == \
+    assert Cell.read('(define list\n  (lambda l l))').write() == \
                      '(define list (lambda l l))'
-    assert Cell.read('1')[0].number == 1
+    assert Cell.read('1').number == 1
 
 
 evaluate = (expr, env='()') ->
-    Cell.eval(Cell.read(expr)[0], Cell.read(env)[0]).write()
+    Cell.read(expr).eval(Cell.read(env)).write()
 
 
 test 'eval', ->
-    assert Cell.eval(Cell(1)).write() == '1'
+    assert Cell(1).eval().write() == '1'
     assert evaluate('1') == '1'
     assert evaluate('#t') == '#t'
     assert evaluate('#f') == '#f'
@@ -123,14 +131,14 @@ test 'eval', ->
         evaluate('b', '( ((a)(1)) )')
 
 test 'environments', ->
-    env = Cell.read('((() ()) ((x) (9)))')[0]
-    Cell.eval(List('define', 'a', 1), env)
+    env = Cell.read('((() ()) ((x) (9)))')
+    List('define', 'a', 1).eval(env)
     assert env.write() == '(((a) (1)) ((x) (9)))'
 
-    Cell.eval(List('define', 'a', 2), env)
+    List('define', 'a', 2).eval(env)
     assert env.write() == '(((a) (2)) ((x) (9)))'
 
-    Cell.eval(List('set!', 'x', 8), env)
+    List('set!', 'x', 8).eval(env)
     assert env.write() == '(((a) (2)) ((x) (8)))'
 
 
@@ -147,23 +155,40 @@ test 'primitives', ->
     assert Cell(->).primitive?
     assert Cell(->).write() == '#<primitive>'
 
-    assert Cell.eval(List('add1', 1), env).number == 2
-    assert Cell.eval(List('eq?', '#t', '#t'), env).symbol == '#t'
-    assert Cell.eval(Cell.read('(add1 (sub1 5))')[0], env).write() == '5'
-    assert Cell.eval(Cell.read('(zero? (sub1 1))')[0], env).write() == '#t'
-    assert Cell.eval(Cell.read('(car (cons 0 1))')[0], env).write() == '0'
-    assert Cell.eval(Cell.read('(cdr (cons 0 1))')[0], env).write() == '1'
-    assert Cell.eval(Cell.read('(number? 1))')[0], env).write() == '#t'
-    assert Cell.eval(Cell.read('(number? #t))')[0], env).write() == '#f'
+    assert List('add1', 1).eval(env).number == 2
+    assert List('eq?', '#t', '#t').eval(env).symbol == '#t'
+    assert Cell.read('(add1 (sub1 5))').eval(env).write() == '5'
+    assert Cell.read('(zero? (sub1 1))').eval(env).write() == '#t'
+    assert Cell.read('(car (cons 0 1))').eval(env).write() == '0'
+    assert Cell.read('(cdr (cons 0 1))').eval(env).write() == '1'
+    assert Cell.read('(number? 1))').eval(env).write() == '#t'
+    assert Cell.read('(number? #t))').eval(env).write() == '#f'
 
 
 test 'procedures', ->
     proc =
-        procedure: Cell.read('(lambda (a) (add1 (add1 a)))')[0]
+        procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
         env: Cell.default_env()
     assert Cell(proc).procedure?
     assert Cell(proc).write() == '<function (lambda (a) (add1 (add1 a)))>'
-    assert Cell.eval(List(List('quote', proc), 1)).write() == '3'
+    assert List(List('quote', proc), 1).eval().write() == '3'
+
+test 'integration', ->
+    source = '''
+             (define map
+               (lambda (f l)
+                 (cond ((null? l) l)
+                       (else (cons (f (car l)) (map f (cdr l)))))))
+
+             (map add1 '(1 2 3 4 5))
+             (map add1 (quote (1 2 3 4 5)))
+             '''
+    assert_equal Cell.evaluate(source), [
+        {line: 3, result: 'ok'}
+        {line: 5, result: '(2 3 4 5 6)'}
+        {line: 6, result: '(2 3 4 5 6)'}
+    ]
+
 
 
 repl = ->
@@ -173,7 +198,7 @@ repl = ->
     process.stdout.write 'little> '
     env = Cell.default_env()
     process.stdin.on 'data', (text) ->
-        print Cell.eval(Cell.read(text.toString())[0], env).write()
+        print Cell.read(text.toString()).eval(env).write()
         process.stdout.write 'little> '
 
-repl()
+#repl()
