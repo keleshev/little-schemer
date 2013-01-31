@@ -48,15 +48,6 @@ set = (expr, env) ->
     throw "unbound variable #{svar.write()}"
 
 
-cond = (body, env) ->
-    return Cell('#f') if body.null?
-    condition = body.car.car
-    condition = Cell('#t') if condition.symbol == 'else'
-    consequence = body.car.cdr.car
-    return consequence.eval(env) if condition.eval(env).symbol != '#f'
-    return cond(body.cdr, env)
-
-
 eval_operands = (operands, env) ->
     return List() if operands.null?
     return Cell(operands.car.eval(env),
@@ -132,37 +123,47 @@ class Cell
 
     eval: (env=List()) ->
         expr = this
-        if expr.self_evaluating?
-            return expr
-        else if expr.pair? and expr.car.symbol == 'quote'
-            return expr.cdr.car
-        else if expr.symbol?
-            return lookup(expr, env)
-        else if expr.pair? and expr.car.symbol == 'define'
-            define(expr, env)
-            return Cell('ok')
-        else if expr.pair? and expr.car.symbol == 'set!'
-            set(expr, env)
-            return Cell('ok')
-        else if expr.pair? and expr.car.symbol == 'cond'
-            return cond(expr.cdr, env)
-        else if expr.pair? and expr.car.symbol == 'env'
-            return env
-        #else if expr.pair? and expr.car.symbol == 'and'
-            #return ...cond(expr.cdr, env)
-        else if expr.pair? and expr.car.symbol == 'lambda'
-            return Cell(procedure: expr, env: env)
-        else if expr.pair?
-            operator = expr.car.eval(env)
-            args = eval_operands(expr.cdr, env)
-            if operator.primitive?
-                return Cell(operator.primitive(args))
-            else if operator.procedure?
-                para = operator.procedure.cdr.car
-                body = operator.procedure.cdr.cdr.car
-                env = Cell(List(para, args), operator.env)
-                return body.eval(env)
-        throw "eval error: #{expr.write()}"
+        loop
+            if expr.self_evaluating?
+                return expr
+            else if expr.pair? and expr.car.symbol == 'quote'
+                return expr.cdr.car
+            else if expr.symbol?
+                return lookup(expr, env)
+            else if expr.pair? and expr.car.symbol == 'define'
+                define(expr, env)
+                return Cell('ok')
+            else if expr.pair? and expr.car.symbol == 'set!'
+                set(expr, env)
+                return Cell('ok')
+            else if expr.pair? and expr.car.symbol == 'cond'
+                body = expr.cdr
+                return Cell('#f') if body.null?
+                condition = body.car.car
+                condition = Cell('#t') if condition.symbol == 'else'
+                consequence = body.car.cdr.car
+                if condition.eval(env).symbol != '#f'
+                    expr = consequence
+                else
+                    expr = Cell('cond', body.cdr)
+            else if expr.pair? and expr.car.symbol == 'env'
+                return env
+            #else if expr.pair? and expr.car.symbol == 'and'
+                #return ...cond(expr.cdr, env)
+            else if expr.pair? and expr.car.symbol == 'lambda'
+                return Cell(procedure: expr, env: env)
+            else if expr.pair?
+                operator = expr.car.eval(env)
+                args = eval_operands(expr.cdr, env)
+                if operator.primitive?
+                    return Cell(operator.primitive(args))
+                else if operator.procedure?
+                    para = operator.procedure.cdr.car
+                    body = operator.procedure.cdr.cdr.car
+                    env = Cell(List(para, args), operator.env)
+                    expr = body
+            else
+                throw "eval error: #{expr.write()}"
 
     @evaluate__: (source) ->
         env = Cell.default_env()
