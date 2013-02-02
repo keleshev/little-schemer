@@ -176,7 +176,7 @@
     Cell.prototype.eval_simple = function(env) {};
 
     Cell.prototype["eval"] = function(env) {
-      var args, body, expr, operator, para;
+      var args, body, car, cdr, expr, operator, para;
       if (env == null) {
         env = null;
       }
@@ -195,17 +195,19 @@
           return Cell(operator.special(args, env));
         } else if ((expr.pair != null) && (expr.car.primitive != null)) {
           operator = expr.car;
-          args = eval_operands(expr.cdr, env);
+          args = expr.cdr;
           return Cell(operator.primitive(args));
         } else if ((expr.pair != null) && (expr.car.procedure != null)) {
           operator = expr.car;
-          args = eval_operands(expr.cdr, env);
+          args = expr.cdr;
           para = operator.procedure.cdr.car;
           body = operator.procedure.cdr.cdr.car;
           env = Cell(List(para, args), operator.env);
           expr = body;
         } else if (expr.pair != null) {
-          expr.car = expr.car["eval"](env);
+          car = expr.car["eval"](env);
+          cdr = car.special != null ? expr.cdr : eval_operands(expr.cdr, env);
+          expr = Cell(car, cdr);
         } else {
           throw "eval error: " + (expr.write());
         }

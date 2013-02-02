@@ -146,17 +146,22 @@ class Cell
                 return Cell(operator.special(args, env))
             else if expr.pair? and expr.car.primitive?
                 operator = expr.car
-                args = eval_operands(expr.cdr, env)
+                args = expr.cdr
                 return Cell(operator.primitive(args))
             else if expr.pair? and expr.car.procedure?
                 operator = expr.car
-                args = eval_operands(expr.cdr, env)
+                args = expr.cdr
                 para = operator.procedure.cdr.car
                 body = operator.procedure.cdr.cdr.car
                 env = Cell(List(para, args), operator.env)
                 expr = body
             else if expr.pair?
-                expr.car = expr.car.eval env
+                car = expr.car.eval env
+                cdr = if car.special?
+                    expr.cdr
+                else
+                    eval_operands(expr.cdr, env)
+                expr = Cell(car, cdr)
             else
                 throw "eval error: #{expr.write()}"
 
