@@ -140,16 +140,6 @@ class Cell
                 return expr
             else if expr.symbol?
                 return lookup(expr, env)
-            else if expr.pair? and expr.car.symbol == 'cond'
-                body = expr.cdr
-                return Cell('#f') if body.null?
-                condition = body.car.car
-                condition = Cell('#t') if condition.symbol == 'else'
-                consequence = body.car.cdr.car
-                if condition.eval(env).symbol != '#f'
-                    expr = consequence
-                else
-                    expr = Cell('cond', body.cdr)
             else if expr.pair? and expr.car.special?
                 operator = expr.car
                 args = expr.cdr
@@ -209,6 +199,15 @@ class Cell
         'set!': (args, env) -> set(args, env)
         'env': (args, env) -> env
         'lambda': (args, env) -> procedure: Cell('lambda', args), env: env
+        'cond': (args, env) ->
+            return '#f' if args.null?
+            condition = args.car.car
+            condition = Cell('#t') if condition.symbol == 'else'
+            consequence = args.car.cdr.car
+            return if condition.eval(env).symbol != '#f'
+                consequence.eval(env)
+            else
+                Cell._specialties['cond'](args.cdr, env)
 
     _write_pair: ->
         if @cdr.null?

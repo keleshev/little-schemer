@@ -176,7 +176,7 @@
     Cell.prototype.eval_simple = function(env) {};
 
     Cell.prototype["eval"] = function(env) {
-      var args, body, condition, consequence, expr, operator, para;
+      var args, body, expr, operator, para;
       if (env == null) {
         env = null;
       }
@@ -189,21 +189,6 @@
           return expr;
         } else if (expr.symbol != null) {
           return lookup(expr, env);
-        } else if ((expr.pair != null) && expr.car.symbol === 'cond') {
-          body = expr.cdr;
-          if (body["null"] != null) {
-            return Cell('#f');
-          }
-          condition = body.car.car;
-          if (condition.symbol === 'else') {
-            condition = Cell('#t');
-          }
-          consequence = body.car.cdr.car;
-          if (condition["eval"](env).symbol !== '#f') {
-            expr = consequence;
-          } else {
-            expr = Cell('cond', body.cdr);
-          }
         } else if ((expr.pair != null) && (expr.car.special != null)) {
           operator = expr.car;
           args = expr.cdr;
@@ -338,6 +323,22 @@
           procedure: Cell('lambda', args),
           env: env
         };
+      },
+      'cond': function(args, env) {
+        var condition, consequence;
+        if (args["null"] != null) {
+          return '#f';
+        }
+        condition = args.car.car;
+        if (condition.symbol === 'else') {
+          condition = Cell('#t');
+        }
+        consequence = args.car.cdr.car;
+        if (condition["eval"](env).symbol !== '#f') {
+          return consequence["eval"](env);
+        } else {
+          return Cell._specialties['cond'](args.cdr, env);
+        }
       }
     };
 
