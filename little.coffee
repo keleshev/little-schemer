@@ -129,25 +129,28 @@ class Cell
     @read: (source) ->
         @_read(source)[0]
 
-    eval_simple: (env) ->
+    _eval: (env) ->
+        expr = this
+        if expr.self_evaluating?
+            return expr
+        else if expr.symbol?
+            return lookup(expr, env)
+        else if expr.pair? and expr.car.special?
+            operator = expr.car
+            args = expr.cdr
+            return Cell(operator.special(args, env))
+        else if expr.pair? and expr.car.primitive?
+            operator = expr.car
+            args = expr.cdr
+            return Cell(operator.primitive(args))
 
     eval: (env=null) ->
         if not env?
             env = Cell.default_env()
         expr = this
         loop
-            if expr.self_evaluating?
-                return expr
-            else if expr.symbol?
-                return lookup(expr, env)
-            else if expr.pair? and expr.car.special?
-                operator = expr.car
-                args = expr.cdr
-                return Cell(operator.special(args, env))
-            else if expr.pair? and expr.car.primitive?
-                operator = expr.car
-                args = expr.cdr
-                return Cell(operator.primitive(args))
+            if not expr.pair? or expr.car.special? or expr.car.primitive?
+                return expr._eval env
             else if expr.pair? and expr.car.procedure?
                 operator = expr.car
                 args = expr.cdr

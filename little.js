@@ -173,7 +173,23 @@
       return this._read(source)[0];
     };
 
-    Cell.prototype.eval_simple = function(env) {};
+    Cell.prototype._eval = function(env) {
+      var args, expr, operator;
+      expr = this;
+      if (expr.self_evaluating != null) {
+        return expr;
+      } else if (expr.symbol != null) {
+        return lookup(expr, env);
+      } else if ((expr.pair != null) && (expr.car.special != null)) {
+        operator = expr.car;
+        args = expr.cdr;
+        return Cell(operator.special(args, env));
+      } else if ((expr.pair != null) && (expr.car.primitive != null)) {
+        operator = expr.car;
+        args = expr.cdr;
+        return Cell(operator.primitive(args));
+      }
+    };
 
     Cell.prototype["eval"] = function(env) {
       var args, body, car, cdr, expr, operator, para;
@@ -185,18 +201,8 @@
       }
       expr = this;
       while (true) {
-        if (expr.self_evaluating != null) {
-          return expr;
-        } else if (expr.symbol != null) {
-          return lookup(expr, env);
-        } else if ((expr.pair != null) && (expr.car.special != null)) {
-          operator = expr.car;
-          args = expr.cdr;
-          return Cell(operator.special(args, env));
-        } else if ((expr.pair != null) && (expr.car.primitive != null)) {
-          operator = expr.car;
-          args = expr.cdr;
-          return Cell(operator.primitive(args));
+        if (!(expr.pair != null) || (expr.car.special != null) || (expr.car.primitive != null)) {
+          return expr._eval(env);
         } else if ((expr.pair != null) && (expr.car.procedure != null)) {
           operator = expr.car;
           args = expr.cdr;
