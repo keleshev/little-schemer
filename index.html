@@ -43,11 +43,12 @@
       //element.style.color = '#aaa'
       var elements = []//document.createElement('div')
       var run = function (cm) {
-        var results = little.eval(cm.getValue().trimRight())
+        results = little.eval(cm.getValue().trimRight())
         results.forEach(function (result) {
             var element = document.createElement('span')
             element.style.color = 'brown'
-            element.innerHTML = '&nbsp;&rArr; ' + result.result
+            element.innerText = result.result
+            element.innerHTML = '&nbsp;&rArr; ' + element.innerHTML
             cm.addWidget({line: result.line, ch: 100}, element)
             //elements.appendChild(element)
             elements.push(element)
@@ -63,7 +64,7 @@
         //  element.parentNode.removeChild(element)
         //})
         elements.forEach(function (element) {
-          element.style.left = '-1000px'
+          element.style.left = '-100000px'
         })
       })
     </script>
