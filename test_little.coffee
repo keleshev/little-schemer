@@ -6,8 +6,9 @@ assert_equal = (a, b) ->
         write '.'
     else
         write 'F\n'
-        console.log a
-        console.log b
+        print 'NOT EQUAL:'
+        print a
+        print b
 test = (name, func) ->
     write "#{name}: "
     func()

@@ -111,7 +111,7 @@
       } else if (args[0].cell != null) {
         return args[0];
       } else {
-        console.log(args[0]);
+        throw "Cell fail: " + args[0];
       }
       this.cell = true;
       if (!(this instanceof Cell)) {

@@ -92,7 +92,7 @@ class Cell
         else if args[0].cell?
             return args[0]
         else
-            console.log args[0]
+            throw "Cell fail: #{args[0]}"
         @cell = true
         return new Cell arguments... if this not instanceof Cell
 
