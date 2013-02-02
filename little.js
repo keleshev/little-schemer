@@ -101,8 +101,10 @@
         this.atom = true;
       } else if (args[0].special != null) {
         this.special = args[0].special;
-      } else if (typeof args[0] === 'function') {
-        this.primitive = args[0];
+        this.name = args[0].name;
+      } else if (args[0].primitive != null) {
+        this.primitive = args[0].primitive;
+        this.name = args[0].name;
       } else if (args[0].procedure != null) {
         this.procedure = args[0].procedure;
         this.env = args[0].env;
@@ -249,13 +251,17 @@
       for (name in _ref) {
         func = _ref[name];
         define(List(name, {
-          special: func
+          special: func,
+          name: name
         }), env);
       }
       _ref1 = this._primitives;
       for (name in _ref1) {
         func = _ref1[name];
-        define(List(name, func), env);
+        define(List(name, {
+          primitive: func,
+          name: name
+        }), env);
       }
       return env;
     };
@@ -356,10 +362,8 @@
         return '()';
       } else if (this.number != null) {
         return this.number.toString();
-      } else if (this.primitive != null) {
-        return '#<primitive>';
-      } else if (this.special != null) {
-        return '#<special>';
+      } else if ((this.primitive != null) || (this.special != null)) {
+        return this.name;
       } else if (this.procedure != null) {
         return this.procedure.write();
       } else {

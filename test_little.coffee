@@ -158,8 +158,8 @@ test 'cond', ->
 test 'primitives', ->
     env = Cell.default_env()
 
-    assert Cell(->).primitive?
-    assert Cell(->).write() == '#<primitive>'
+    assert Cell(primitive: true, name: 'hai').primitive?
+    assert Cell(primitive: true, name: 'hai').write() == 'hai'
 
     assert List('add1', 1).eval(env).number == 2
     assert List('eq?', '#t', '#t').eval(env).symbol == '#t'
@@ -171,6 +171,11 @@ test 'primitives', ->
     assert Cell.read('(number? #t))').eval(env).write() == '#f'
 
 
+test 'specialties', ->
+    assert Cell(special: true, name: 'hai').special?
+    assert Cell(special: true, name: 'hai').write() == 'hai'
+
+
 test 'procedures', ->
     proc =
         procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
@@ -178,6 +183,7 @@ test 'procedures', ->
     assert Cell(proc).procedure?
     assert Cell(proc).write() == '(lambda (a) (add1 (add1 a)))'
     assert List(List('quote', proc), 1).eval().write() == '3'
+
 
 test 'integration', ->
     source = '''
@@ -194,7 +200,6 @@ test 'integration', ->
         {line: 5, result: '(2 3 4 5 6)'}
         {line: 6, result: '(2 3 4 5 6)'}
     ]
-
 
 
 repl = ->

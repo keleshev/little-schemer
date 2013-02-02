@@ -82,8 +82,10 @@ class Cell
             @atom = true
         else if args[0].special?
             @special = args[0].special
-        else if typeof args[0] is 'function'
-            @primitive = args[0]
+            @name = args[0].name
+        else if args[0].primitive?
+            @primitive = args[0].primitive
+            @name = args[0].name
         else if args[0].procedure?
             @procedure = args[0].procedure
             @env = args[0].env
@@ -182,9 +184,9 @@ class Cell
     @default_env: ->
         env = @read('((() ()))')
         for name, func of @_specialties
-            define(List(name, special: func), env)
+            define(List(name, special: func, name: name), env)
         for name, func of @_primitives
-            define(List(name, func), env)
+            define(List(name, primitive: func, name: name), env)
         return env
 
     @_primitives:
@@ -227,10 +229,8 @@ class Cell
             '()'
         else if @number?
             @number.toString()
-        else if @primitive?
-            '#<primitive>'
-        else if @special?
-            '#<special>'
+        else if @primitive? or @special?
+            @name
         else if @procedure?
             @procedure.write()
         else
