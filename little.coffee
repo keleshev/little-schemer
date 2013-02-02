@@ -21,18 +21,18 @@ define = (args, env) ->
     return 'ok'
 
 
-lookup = (expr, env) ->
+lookup = (exp, env) ->
     while not env.null?
         frame = env.car
         vars = frame.car
         vals = frame.cdr.car
         while not vars.null?
-            if vars.car.symbol == expr.symbol
+            if vars.car.symbol == exp.symbol
                 return vals.car
             vars = vars.cdr
             vals = vals.cdr
         env = env.cdr
-    throw "unbound variable #{expr.write()}"
+    throw "unbound variable #{exp.write()}"
 
 
 set = (args, env) ->
@@ -130,43 +130,44 @@ class Cell
         @_read(source)[0]
 
     _eval: (env) ->
-        expr = this
-        if expr.self_evaluating?
-            return expr
-        else if expr.symbol?
-            return lookup(expr, env)
-        else if expr.pair? and expr.car.special?
-            operator = expr.car
-            args = expr.cdr
+        exp = this
+        if exp.self_evaluating?
+            return exp
+        else if exp.symbol?
+            return lookup(exp, env)
+        else if exp.pair? and exp.car.special?
+            operator = exp.car
+            args = exp.cdr
             return Cell(operator.special(args, env))
-        else if expr.pair? and expr.car.primitive?
-            operator = expr.car
-            args = expr.cdr
+        else if exp.pair? and exp.car.primitive?
+            operator = exp.car
+            args = exp.cdr
             return Cell(operator.primitive(args))
 
     eval: (env=null) ->
         if not env?
             env = Cell.default_env()
-        expr = this
+        exp = this
+
         loop
-            if not expr.pair? or expr.car.special? or expr.car.primitive?
-                return expr._eval env
-            else if expr.pair? and expr.car.procedure?
-                operator = expr.car
-                args = expr.cdr
+            if not exp.pair? or exp.car.special? or exp.car.primitive?
+                return exp._eval env
+            else if exp.pair? and exp.car.procedure?
+                operator = exp.car
+                args = exp.cdr
                 para = operator.procedure.cdr.car
                 body = operator.procedure.cdr.cdr.car
                 env = Cell(List(para, args), operator.env)
-                expr = body
-            else if expr.pair?
-                car = expr.car.eval env
+                exp = body
+            else if exp.pair?
+                car = exp.car.eval env
                 cdr = if car.special?
-                    expr.cdr
+                    exp.cdr
                 else
-                    eval_operands(expr.cdr, env)
-                expr = Cell(car, cdr)
+                    eval_operands(exp.cdr, env)
+                exp = Cell(car, cdr)
             else
-                throw "eval error: #{expr.write()}"
+                throw "eval error: #{exp.write()}"
 
     @evaluate: (source) ->
         env = Cell.default_env()

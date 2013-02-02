@@ -29,14 +29,14 @@
     return 'ok';
   };
 
-  lookup = function(expr, env) {
+  lookup = function(exp, env) {
     var frame, vals, vars;
     while (!(env["null"] != null)) {
       frame = env.car;
       vars = frame.car;
       vals = frame.cdr.car;
       while (!(vars["null"] != null)) {
-        if (vars.car.symbol === expr.symbol) {
+        if (vars.car.symbol === exp.symbol) {
           return vals.car;
         }
         vars = vars.cdr;
@@ -44,7 +44,7 @@
       }
       env = env.cdr;
     }
-    throw "unbound variable " + (expr.write());
+    throw "unbound variable " + (exp.write());
   };
 
   set = function(args, env) {
@@ -174,48 +174,48 @@
     };
 
     Cell.prototype._eval = function(env) {
-      var args, expr, operator;
-      expr = this;
-      if (expr.self_evaluating != null) {
-        return expr;
-      } else if (expr.symbol != null) {
-        return lookup(expr, env);
-      } else if ((expr.pair != null) && (expr.car.special != null)) {
-        operator = expr.car;
-        args = expr.cdr;
+      var args, exp, operator;
+      exp = this;
+      if (exp.self_evaluating != null) {
+        return exp;
+      } else if (exp.symbol != null) {
+        return lookup(exp, env);
+      } else if ((exp.pair != null) && (exp.car.special != null)) {
+        operator = exp.car;
+        args = exp.cdr;
         return Cell(operator.special(args, env));
-      } else if ((expr.pair != null) && (expr.car.primitive != null)) {
-        operator = expr.car;
-        args = expr.cdr;
+      } else if ((exp.pair != null) && (exp.car.primitive != null)) {
+        operator = exp.car;
+        args = exp.cdr;
         return Cell(operator.primitive(args));
       }
     };
 
     Cell.prototype["eval"] = function(env) {
-      var args, body, car, cdr, expr, operator, para;
+      var args, body, car, cdr, exp, operator, para;
       if (env == null) {
         env = null;
       }
       if (!(env != null)) {
         env = Cell.default_env();
       }
-      expr = this;
+      exp = this;
       while (true) {
-        if (!(expr.pair != null) || (expr.car.special != null) || (expr.car.primitive != null)) {
-          return expr._eval(env);
-        } else if ((expr.pair != null) && (expr.car.procedure != null)) {
-          operator = expr.car;
-          args = expr.cdr;
+        if (!(exp.pair != null) || (exp.car.special != null) || (exp.car.primitive != null)) {
+          return exp._eval(env);
+        } else if ((exp.pair != null) && (exp.car.procedure != null)) {
+          operator = exp.car;
+          args = exp.cdr;
           para = operator.procedure.cdr.car;
           body = operator.procedure.cdr.cdr.car;
           env = Cell(List(para, args), operator.env);
-          expr = body;
-        } else if (expr.pair != null) {
-          car = expr.car["eval"](env);
-          cdr = car.special != null ? expr.cdr : eval_operands(expr.cdr, env);
-          expr = Cell(car, cdr);
+          exp = body;
+        } else if (exp.pair != null) {
+          car = exp.car["eval"](env);
+          cdr = car.special != null ? exp.cdr : eval_operands(exp.cdr, env);
+          exp = Cell(car, cdr);
         } else {
-          throw "eval error: " + (expr.write());
+          throw "eval error: " + (exp.write());
         }
       }
     };
