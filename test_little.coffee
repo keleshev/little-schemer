@@ -113,8 +113,10 @@ test 'read', ->
     assert Cell.read('1').number == 1
 
 
-evaluate = (expr, env='()') ->
-    Cell.read(expr).eval(Cell.read(env)).write()
+evaluate = (expr, env=null) ->
+    if env?
+        env = Cell.read(env)
+    Cell.read(expr).eval(env).write()
 
 
 test 'eval', ->
@@ -131,15 +133,19 @@ test 'eval', ->
         evaluate('b', '( ((a)(1)) )')
 
 test 'environments', ->
-    env = Cell.read('((() ()) ((x) (9)))')
+    env = Cell(Cell.read('((x) (9))'), Cell.default_env())
+    env = Cell(Cell.read('(() ())'), env)
     List('define', 'a', 1).eval(env)
-    assert env.write() == '(((a) (1)) ((x) (9)))'
+    assert env.car.write() == '((a) (1))'
+    assert env.cdr.car.write() == '((x) (9))'
 
     List('define', 'a', 2).eval(env)
-    assert env.write() == '(((a) (2)) ((x) (9)))'
+    assert env.car.write() == '((a) (2))'
+    assert env.cdr.car.write() == '((x) (9))'
 
     List('set!', 'x', 8).eval(env)
-    assert env.write() == '(((a) (2)) ((x) (8)))'
+    assert env.car.write() == '((a) (2))'
+    assert env.cdr.car.write() == '((x) (8))'
 
 
 test 'cond', ->
@@ -170,7 +176,7 @@ test 'procedures', ->
         procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
         env: Cell.default_env()
     assert Cell(proc).procedure?
-    assert Cell(proc).write() == '<function (lambda (a) (add1 (add1 a)))>'
+    assert Cell(proc).write() == '(lambda (a) (add1 (add1 a)))'
     assert List(List('quote', proc), 1).eval().write() == '3'
 
 test 'integration', ->

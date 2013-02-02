@@ -1,20 +1,24 @@
+print = -> console.log arguments...
+
+
 DELIMITER = /(\s|\))/
 
 
-define = (expr, env) ->
-    dvar = expr.cdr.car
-    dval = expr.cdr.cdr.car.eval(env)
+define = (args, env) ->
+    dvar = args.car
+    dval = args.cdr.car
     frame = env.car
     vars = frame.car
     vals = frame.cdr.car
     while not vars.null?
         if vars.car.symbol == dvar.symbol
             vals.car = dval
-            return
+            return 'ok'
         vars = vars.cdr
         vals = vals.cdr
     frame.car = Cell(dvar, frame.car)
     frame.cdr.car = Cell(dval, frame.cdr.car)
+    return 'ok'
 
 
 lookup = (expr, env) ->
@@ -31,9 +35,9 @@ lookup = (expr, env) ->
     throw "unbound variable #{expr.write()}"
 
 
-set = (expr, env) ->
-    svar = expr.cdr.car
-    sval = expr.cdr.cdr.car
+set = (args, env) ->
+    svar = args.car
+    sval = args.cdr.car
     while not env.null?
         frame = env.car
         vars = frame.car
@@ -41,7 +45,7 @@ set = (expr, env) ->
         while not vars.null?
             if vars.car.symbol == svar.symbol
                 vals.car = sval
-                return
+                return 'ok'
             vars = vars.cdr
             vals = vals.cdr
         env = env.cdr
@@ -76,6 +80,8 @@ class Cell
         else if typeof args[0] is 'string'
             @symbol = args[0]
             @atom = true
+        else if args[0].special?
+            @special = args[0].special
         else if typeof args[0] is 'function'
             @primitive = args[0]
         else if args[0].procedure?
@@ -121,21 +127,17 @@ class Cell
     @read: (source) ->
         @_read(source)[0]
 
-    eval: (env=List()) ->
+    eval_simple: (env) ->
+
+    eval: (env=null) ->
+        if not env?
+            env = Cell.default_env()
         expr = this
         loop
             if expr.self_evaluating?
                 return expr
-            else if expr.pair? and expr.car.symbol == 'quote'
-                return expr.cdr.car
             else if expr.symbol?
                 return lookup(expr, env)
-            else if expr.pair? and expr.car.symbol == 'define'
-                define(expr, env)
-                return Cell('ok')
-            else if expr.pair? and expr.car.symbol == 'set!'
-                set(expr, env)
-                return Cell('ok')
             else if expr.pair? and expr.car.symbol == 'cond'
                 body = expr.cdr
                 return Cell('#f') if body.null?
@@ -146,33 +148,25 @@ class Cell
                     expr = consequence
                 else
                     expr = Cell('cond', body.cdr)
-            else if expr.pair? and expr.car.symbol == 'env'
-                return env
-            #else if expr.pair? and expr.car.symbol == 'and'
-                #return ...cond(expr.cdr, env)
-            else if expr.pair? and expr.car.symbol == 'lambda'
-                return Cell(procedure: expr, env: env)
-            else if expr.pair?
-                operator = expr.car.eval(env)
+            else if expr.pair? and expr.car.special?
+                operator = expr.car
+                args = expr.cdr
+                return Cell(operator.special(args, env))
+            else if expr.pair? and expr.car.primitive?
+                operator = expr.car
                 args = eval_operands(expr.cdr, env)
-                if operator.primitive?
-                    return Cell(operator.primitive(args))
-                else if operator.procedure?
-                    para = operator.procedure.cdr.car
-                    body = operator.procedure.cdr.cdr.car
-                    env = Cell(List(para, args), operator.env)
-                    expr = body
+                return Cell(operator.primitive(args))
+            else if expr.pair? and expr.car.procedure?
+                operator = expr.car
+                args = eval_operands(expr.cdr, env)
+                para = operator.procedure.cdr.car
+                body = operator.procedure.cdr.cdr.car
+                env = Cell(List(para, args), operator.env)
+                expr = body
+            else if expr.pair?
+                expr.car = expr.car.eval env
             else
                 throw "eval error: #{expr.write()}"
-
-    @evaluate__: (source) ->
-        env = Cell.default_env()
-        result = ''
-        while source != ''
-            [parsed, source] = Cell._read(source)
-            evaled = parsed.eval(env)
-            result += evaled.write() + '\n'
-        return result
 
     @evaluate: (source) ->
         env = Cell.default_env()
@@ -187,8 +181,10 @@ class Cell
 
     @default_env: ->
         env = @read('((() ()))')
+        for name, func of @_specialties
+            define(List(name, special: func), env)
         for name, func of @_primitives
-            define(List('define', name, List('quote', func)), env)
+            define(List(name, func), env)
         return env
 
     @_primitives:
@@ -202,6 +198,15 @@ class Cell
         'add1': (args) -> args.car.number + 1
         'sub1': (args) -> args.car.number - 1
         'number?': (args) -> if args.car.number? then '#t' else '#f'
+
+    @_specialties:
+        'quote': (args, env) -> args.car
+        'define': (args, env) ->
+            args.cdr.car = args.cdr.car.eval(env)
+            define(args, env)
+        'set!': (args, env) -> set(args, env)
+        'env': (args, env) -> env
+        'lambda': (args, env) -> procedure: Cell('lambda', args), env: env
 
     _write_pair: ->
         if @cdr.null?
@@ -224,8 +229,10 @@ class Cell
             @number.toString()
         else if @primitive?
             '#<primitive>'
+        else if @special?
+            '#<special>'
         else if @procedure?
-            "<function #{@procedure.write()}>"
+            @procedure.write()
         else
             throw 'write error'
 
