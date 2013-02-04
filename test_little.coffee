@@ -1,27 +1,4 @@
-write = -> process.stdout.write arguments...
-print = -> console.log arguments...
-assert = (cond) -> write if cond then '.' else 'F'
-assert_equal = (a, b) ->
-    if JSON.stringify(a) == JSON.stringify(b)
-        write '.'
-    else
-        write 'F\n'
-        print 'NOT EQUAL:'
-        print a
-        print b
-test = (name, func) ->
-    write "#{name}: "
-    func()
-    write '\n'
-skip = (name, func) ->
-raises = (message, func) ->
-    try
-        func()
-        assert false
-    catch error
-        assert error == message
-
-
+{test, assert} = require './ytest.coffee'
 {Cell, List} = require './little.coffee'
 
 
@@ -84,11 +61,11 @@ test 'is_eq', ->
     assert not Cell('bye').is_eq Cell('hai')
 
     law = 'eq? takes two non-numeric atoms'
-    raises law, ->
+    assert.raises law, ->
         Cell(1, 2).is_eq Cell(1, 2)
-    raises law, ->
+    assert.raises law, ->
         Cell(1).is_eq Cell(1)
-    raises law, ->
+    assert.raises law, ->
         List(1, 2, 3).is_eq List(1, 2, 3)
 
 
@@ -103,11 +80,11 @@ test 'read', ->
     assert Cell.read("'(hai bye)").write() == '(quote (hai bye))'
     assert Cell.read('(hai . bye)').write() == '(hai . bye)'
     assert Cell.read('(hai . bye)').cdr.write() == 'bye'
-    raises 'missing right paren', ->
+    assert.raises 'missing right paren', ->
         Cell.read('(')
-    raises 'missing right paren', ->
+    assert.raises 'missing right paren', ->
         Cell.read('(hai ')
-    raises 'no delimiter after dot', ->
+    assert.raises 'no delimiter after dot', ->
         Cell.read('(hai .a)')
     assert Cell.read('(define list\n  (lambda l l))').write() == \
                      '(define list (lambda l l))'
@@ -130,7 +107,7 @@ test 'eval', ->
     assert evaluate('a', '( ((a)(1)) )') == '1'
     assert evaluate('b', '( ((a b)(1 2)) )') == '2'
     assert evaluate('b', '( ((a)(1)) ((b)(2)) )') == '2'
-    raises 'unbound variable b', ->
+    assert.raises 'unbound variable b', ->
         evaluate('b', '( ((a)(1)) )')
 
 test 'environments', ->
@@ -196,7 +173,7 @@ test 'integration', ->
              (map add1 '(1 2 3 4 5))
              (map add1 (quote (1 2 3 4 5)))
              '''
-    assert_equal Cell.evaluate(source), [
+    assert.equal Cell.evaluate(source), [
         {line: 3, result: 'ok'}
         {line: 5, result: '(2 3 4 5 6)'}
         {line: 6, result: '(2 3 4 5 6)'}
@@ -212,5 +189,6 @@ repl = ->
     process.stdin.on 'data', (text) ->
         print Cell.read(text.toString()).eval(env).write()
         process.stdout.write 'little> '
+
 
 #repl()

@@ -414,7 +414,9 @@
 
   if (typeof module !== "undefined" && module !== null) {
     module.exports = provide;
-  } else {
+  }
+
+  if (typeof window !== "undefined" && window !== null) {
     window.little = provide;
   }
 

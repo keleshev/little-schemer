@@ -261,13 +261,6 @@ List = (args...) ->
         Cell(args[0], List(args[1..]...))
 
 
-provide =
-    Cell: Cell
-    List: List
-    eval: Cell.evaluate
-
-
-if module?
-    module.exports = provide
-else
-    window.little = provide
+provide = {Cell, List, eval: Cell.evaluate}
+module?.exports = provide
+window?.little = provide
