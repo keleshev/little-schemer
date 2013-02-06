@@ -38,4 +38,4 @@ assert.raises = (message, func) ->
         assert error == message
 
 
-module.exports = {test, assert}
+module.exports = {test, assert, print}

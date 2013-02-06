@@ -52,17 +52,12 @@ set = (args, env) ->
     throw "unbound variable #{svar.write()}"
 
 
-eval_operands = (operands, env) ->
-    return List() if operands.null?
-    return Cell(operands.car.eval(env),
-                eval_operands(operands.cdr, env))
-
-
 class Cell
 
     constructor: (args...) ->
         if args.length == 2
             [car, cdr] = args
+            throw "undefined: #{car}, #{cdr}" if not car? or not cdr?
             @car = if car.cell? then car else Cell(car)
             @cdr = if cdr.cell? then cdr else Cell(cdr)
             @pair = true
@@ -143,31 +138,74 @@ class Cell
             operator = exp.car
             args = exp.cdr
             return Cell(operator.primitive(args))
+        else
+            throw '_eval error'
+
+    copy: ->
+        throw 'copy works only on pairs' if not @car? or not @cdr? or not @pair?
+        Cell(@car, @cdr)
 
     eval: (env=null) ->
         if not env?
             env = Cell.default_env()
-        exp = this
 
+        exp = Cell(this, Cell(null))
+        stack = [{exp: Cell(exp, Cell(null)), env: env},
+                 {exp: exp, env: env}]
         loop
-            if not exp.pair? or exp.car.special? or exp.car.primitive?
-                return exp._eval env
-            else if exp.pair? and exp.car.procedure?
-                operator = exp.car
-                args = exp.cdr
+            me = stack[stack.length - 1]
+
+            if me.exp.car.pair?
+                car = me.exp.car.copy()
+                me.exp.car = car
+                stack.push exp: car, env: me.env
+            else if me.exp.car.special? or me.exp.car.primitive?
+                parent = stack[stack.length - 2]
+                throw 'parent 1' if not parent?
+                throw 'builtin not in head position' if parent.exp.car != me.exp
+                stack.pop()  # pop child
+                throw 'pop 1' if stack.length < 1
+                parent.exp.car = me.exp._eval me.env
+                if parent.exp.cdr.null?
+                    # cannot continue right, restart
+                    grandpa = stack[stack.length - 2]
+                    throw 'parent 2' if not grandpa?
+                    parent.exp = grandpa.exp.car  # reset to parent's head
+                else  # continue right
+                    cdr = parent.exp.cdr.copy()
+                    parent.exp.cdr = cdr
+                    parent.exp = cdr
+            else if me.exp.car.procedure?
+                parent = stack[stack.length - 2]
+                throw 'parent 3' if not parent?
+                throw 'proc not in head position' if parent.exp.car != me.exp
+                stack.pop()  # pop child
+                throw 'pop 1' if stack.length < 1
+                operator = me.exp.car
+                args = me.exp.cdr
                 para = operator.procedure.cdr.car
-                body = operator.procedure.cdr.cdr.car
+                body = operator.procedure.cdr.cdr.car#.copy()
                 env = Cell(List(para, args), operator.env)
-                exp = body
-            else if exp.pair?
-                car = exp.car.eval env
-                cdr = if car.special?
-                    exp.cdr
+                parent.exp.car = body     ####.copy()?
+                stack.push exp: body, env: env
+            else  # me.exp.car is not pair/special/primitive/procedure
+                me.exp.car = me.exp.car._eval me.env
+                parent = stack[stack.length - 2]
+                throw "parent 4" if not parent?
+                # if special and in head position
+                if me.exp.car.special? and parent.exp.car == me.exp
                 else
-                    eval_operands(exp.cdr, env)
-                exp = Cell(car, cdr)
-            else
-                throw "eval error: #{exp.write()}"
+                    if me.exp.cdr.null?
+                        # cannot continue right, restart
+                        me.exp = parent.exp.car
+                    else  # continue right
+                        cdr = me.exp.cdr.copy()
+                        me.exp.cdr = cdr
+                        me.exp = cdr
+
+            if stack.length is 2
+                me = stack[stack.length - 1]
+                return me.exp.car
 
     @evaluate: (source) ->
         env = Cell.default_env()

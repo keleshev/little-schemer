@@ -1,4 +1,4 @@
-{test, assert} = require './ytest.coffee'
+{test, assert, print} = require './ytest.coffee'
 {Cell, List} = require './little.coffee'
 
 
@@ -141,6 +141,7 @@ test 'primitives', ->
 
     assert List('add1', 1).eval(env).number == 2
     assert List('eq?', '#t', '#t').eval(env).symbol == '#t'
+
     assert Cell.read('(add1 (sub1 5))').eval(env).write() == '5'
     assert Cell.read('(zero? (sub1 1))').eval(env).write() == '#t'
     assert Cell.read('(car (cons 0 1))').eval(env).write() == '0'
