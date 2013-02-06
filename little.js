@@ -472,9 +472,9 @@
       } else if (this.number != null) {
         return this.number.toString();
       } else if ((this.primitive != null) || (this.special != null)) {
-        return this.name;
+        return '#' + this.name;
       } else if (this.procedure != null) {
-        return this.procedure.write();
+        return '#' + this.procedure.write();
       } else {
         throw 'write error';
       }

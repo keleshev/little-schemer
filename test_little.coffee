@@ -137,7 +137,7 @@ test 'primitives', ->
     env = Cell.default_env()
 
     assert Cell(primitive: true, name: 'hai').primitive?
-    assert Cell(primitive: true, name: 'hai').write() == 'hai'
+    assert Cell(primitive: true, name: 'hai').write().indexOf('hai') != -1
 
     assert List('add1', 1).eval(env).number == 2
     assert List('eq?', '#t', '#t').eval(env).symbol == '#t'
@@ -152,7 +152,7 @@ test 'primitives', ->
 
 test 'specialties', ->
     assert Cell(special: true, name: 'hai').special?
-    assert Cell(special: true, name: 'hai').write() == 'hai'
+    assert Cell(special: true, name: 'hai').write().indexOf('hai') != -1
 
 
 test 'procedures', ->
@@ -160,7 +160,7 @@ test 'procedures', ->
         procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
         env: Cell.default_env()
     assert Cell(proc).procedure?
-    assert Cell(proc).write() == '(lambda (a) (add1 (add1 a)))'
+    assert Cell(proc).write().indexOf('(lambda (a) (add1 (add1 a)))') != -1
     assert List(List('quote', proc), 1).eval().write() == '3'
 
 

@@ -295,9 +295,9 @@ class Cell
         else if @number?
             @number.toString()
         else if @primitive? or @special?
-            @name
+            '#' + @name
         else if @procedure?
-            @procedure.write()
+            '#' + @procedure.write()
         else
             throw 'write error'
 
