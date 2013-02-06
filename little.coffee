@@ -138,8 +138,10 @@ class Cell
             operator = exp.car
             args = exp.cdr
             return Cell(operator.primitive(args))
+        else if exp.null?  # should it be self evaluating?!
+            return exp
         else
-            throw '_eval error'
+            throw "_eval error: #{this.write()}"
 
     copy: ->
         throw 'copy works only on pairs' if not @car? or not @cdr? or not @pair?
@@ -159,6 +161,31 @@ class Cell
                 car = me.exp.car.copy()
                 me.exp.car = car
                 stack.push exp: car, env: me.env
+            else if me.exp.car.name == 'cond'
+                parent = stack[stack.length - 2]
+                if me.exp.cdr.null?
+                    parent.exp.car = Cell('#f')
+                    stack.pop()
+                else
+                    condition = me.exp.cdr.car.car
+                    condition = Cell('#t') if condition.symbol == 'else'
+                    consequence = me.exp.cdr.car.cdr.car
+                    if condition.eval(me.env).symbol != '#f'
+                        if consequence.pair?
+                            parent.exp.car = consequence.copy()
+                            stack.pop()
+                            stack.push exp: parent.exp.car, env: me.env
+                        else
+                            parent.exp.car = consequence
+                            if consequence.pair?
+                                parent.exp.car = consequence.copy()
+                            else
+                                parent.exp.car = parent.exp.car._eval me.env
+                            stack.pop()
+                    else
+                        parent.exp.car = Cell('cond', me.exp.cdr.cdr)
+                        stack.pop()
+                        stack.push exp: parent.exp.car, env: me.env
             else if me.exp.car.special? or me.exp.car.primitive?
                 parent = stack[stack.length - 2]
                 throw 'parent 1' if not parent?
@@ -185,9 +212,9 @@ class Cell
                 args = me.exp.cdr
                 para = operator.procedure.cdr.car
                 body = operator.procedure.cdr.cdr.car#.copy()
-                env = Cell(List(para, args), operator.env)
+                env_ = Cell(List(para, args), operator.env)
                 parent.exp.car = body     ####.copy()?
-                stack.push exp: body, env: env
+                stack.push exp: body, env: env_
             else  # me.exp.car is not pair/special/primitive/procedure
                 me.exp.car = me.exp.car._eval me.env
                 parent = stack[stack.length - 2]
@@ -246,15 +273,7 @@ class Cell
         'set!': (args, env) -> set(args, env)
         'env': (args, env) -> env
         'lambda': (args, env) -> procedure: Cell('lambda', args), env: env
-        'cond': (args, env) ->
-            return '#f' if args.null?
-            condition = args.car.car
-            condition = Cell('#t') if condition.symbol == 'else'
-            consequence = args.car.cdr.car
-            return if condition.eval(env).symbol != '#f'
-                consequence.eval(env)
-            else
-                Cell._specialties['cond'](args.cdr, env)
+        'cond': (args, env) -> throw 'placeholder; should not be called'
 
     _write_pair: ->
         if @cdr.null?

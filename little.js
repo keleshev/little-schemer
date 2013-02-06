@@ -184,8 +184,10 @@
         operator = exp.car;
         args = exp.cdr;
         return Cell(operator.primitive(args));
+      } else if (exp["null"] != null) {
+        return exp;
       } else {
-        throw '_eval error';
+        throw "_eval error: " + (this.write());
       }
     };
 
@@ -197,7 +199,7 @@
     };
 
     Cell.prototype["eval"] = function(env) {
-      var args, body, car, cdr, exp, grandpa, me, operator, para, parent, stack;
+      var args, body, car, cdr, condition, consequence, env_, exp, grandpa, me, operator, para, parent, stack;
       if (env == null) {
         env = null;
       }
@@ -223,6 +225,43 @@
             exp: car,
             env: me.env
           });
+        } else if (me.exp.car.name === 'cond') {
+          parent = stack[stack.length - 2];
+          if (me.exp.cdr["null"] != null) {
+            parent.exp.car = Cell('#f');
+            stack.pop();
+          } else {
+            condition = me.exp.cdr.car.car;
+            if (condition.symbol === 'else') {
+              condition = Cell('#t');
+            }
+            consequence = me.exp.cdr.car.cdr.car;
+            if (condition["eval"](me.env).symbol !== '#f') {
+              if (consequence.pair != null) {
+                parent.exp.car = consequence.copy();
+                stack.pop();
+                stack.push({
+                  exp: parent.exp.car,
+                  env: me.env
+                });
+              } else {
+                parent.exp.car = consequence;
+                if (consequence.pair != null) {
+                  parent.exp.car = consequence.copy();
+                } else {
+                  parent.exp.car = parent.exp.car._eval(me.env);
+                }
+                stack.pop();
+              }
+            } else {
+              parent.exp.car = Cell('cond', me.exp.cdr.cdr);
+              stack.pop();
+              stack.push({
+                exp: parent.exp.car,
+                env: me.env
+              });
+            }
+          }
         } else if ((me.exp.car.special != null) || (me.exp.car.primitive != null)) {
           parent = stack[stack.length - 2];
           if (!(parent != null)) {
@@ -263,11 +302,11 @@
           args = me.exp.cdr;
           para = operator.procedure.cdr.car;
           body = operator.procedure.cdr.cdr.car;
-          env = Cell(List(para, args), operator.env);
+          env_ = Cell(List(para, args), operator.env);
           parent.exp.car = body;
           stack.push({
             exp: body,
-            env: env
+            env: env_
           });
         } else {
           me.exp.car = me.exp.car._eval(me.env);
@@ -407,20 +446,7 @@
         };
       },
       'cond': function(args, env) {
-        var condition, consequence;
-        if (args["null"] != null) {
-          return '#f';
-        }
-        condition = args.car.car;
-        if (condition.symbol === 'else') {
-          condition = Cell('#t');
-        }
-        consequence = args.car.cdr.car;
-        if (condition["eval"](env).symbol !== '#f') {
-          return consequence["eval"](env);
-        } else {
-          return Cell._specialties['cond'](args.cdr, env);
-        }
+        throw 'placeholder; should not be called';
       }
     };
 
