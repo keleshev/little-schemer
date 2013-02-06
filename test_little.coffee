@@ -179,17 +179,3 @@ test 'integration', ->
         {line: 5, result: '(2 3 4 5 6)'}
         {line: 6, result: '(2 3 4 5 6)'}
     ]
-
-
-repl = ->
-    util = require 'util'
-    process.stdin.resume()
-    process.stdin.setEncoding 'utf8'
-    process.stdout.write 'little> '
-    env = Cell.default_env()
-    process.stdin.on 'data', (text) ->
-        print Cell.read(text.toString()).eval(env).write()
-        process.stdout.write 'little> '
-
-
-#repl()
