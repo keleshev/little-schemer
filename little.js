@@ -199,7 +199,7 @@
     };
 
     Cell.prototype["eval"] = function(env) {
-      var args, body, car, cdr, condition, consequence, env_, exp, grandpa, me, operator, para, parent, stack;
+      var args, body, car, cdr, condition, consequence, exp, grandpa, me, operator, para, parent, stack;
       if (env == null) {
         env = null;
       }
@@ -218,6 +218,10 @@
       ];
       while (true) {
         me = stack[stack.length - 1];
+        parent = stack[stack.length - 2];
+        if (!(parent != null)) {
+          throw 'not parent?';
+        }
         if (me.exp.car.pair != null) {
           car = me.exp.car.copy();
           me.exp.car = car;
@@ -225,55 +229,38 @@
             exp: car,
             env: me.env
           });
-        } else if (me.exp.car.name === 'cond') {
-          parent = stack[stack.length - 2];
+        } else if (me.exp.car.special === Cell._specialties['cond']) {
           if (me.exp.cdr["null"] != null) {
-            parent.exp.car = Cell('#f');
-            stack.pop();
-          } else {
-            condition = me.exp.cdr.car.car;
-            if (condition.symbol === 'else') {
-              condition = Cell('#t');
-            }
-            consequence = me.exp.cdr.car.cdr.car;
-            if (condition["eval"](me.env).symbol !== '#f') {
-              if (consequence.pair != null) {
-                parent.exp.car = consequence.copy();
-                stack.pop();
-                stack.push({
-                  exp: parent.exp.car,
-                  env: me.env
-                });
-              } else {
-                parent.exp.car = consequence;
-                if (consequence.pair != null) {
-                  parent.exp.car = consequence.copy();
-                } else {
-                  parent.exp.car = parent.exp.car._eval(me.env);
-                }
-                stack.pop();
-              }
-            } else {
-              parent.exp.car = Cell('cond', me.exp.cdr.cdr);
-              stack.pop();
+            throw '(cond) with no body';
+          }
+          stack.pop();
+          condition = me.exp.cdr.car.car;
+          if (condition.symbol === 'else') {
+            condition = Cell('#t');
+          }
+          consequence = me.exp.cdr.car.cdr.car;
+          if (condition["eval"](me.env).symbol !== '#f') {
+            if (consequence.pair != null) {
+              parent.exp.car = consequence.copy();
               stack.push({
                 exp: parent.exp.car,
                 env: me.env
               });
+            } else {
+              parent.exp.car = consequence._eval(me.env);
             }
+          } else {
+            parent.exp.car = Cell('cond', me.exp.cdr.cdr);
+            stack.push({
+              exp: parent.exp.car,
+              env: me.env
+            });
           }
         } else if ((me.exp.car.special != null) || (me.exp.car.primitive != null)) {
-          parent = stack[stack.length - 2];
-          if (!(parent != null)) {
-            throw 'parent 1';
-          }
           if (parent.exp.car !== me.exp) {
             throw 'builtin not in head position';
           }
           stack.pop();
-          if (stack.length < 1) {
-            throw 'pop 1';
-          }
           parent.exp.car = me.exp._eval(me.env);
           if (parent.exp.cdr["null"] != null) {
             grandpa = stack[stack.length - 2];
@@ -287,36 +274,22 @@
             parent.exp = cdr;
           }
         } else if (me.exp.car.procedure != null) {
-          parent = stack[stack.length - 2];
-          if (!(parent != null)) {
-            throw 'parent 3';
-          }
           if (parent.exp.car !== me.exp) {
             throw 'proc not in head position';
           }
           stack.pop();
-          if (stack.length < 1) {
-            throw 'pop 1';
-          }
           operator = me.exp.car;
           args = me.exp.cdr;
           para = operator.procedure.cdr.car;
-          body = operator.procedure.cdr.cdr.car;
-          env_ = Cell(List(para, args), operator.env);
+          body = operator.procedure.cdr.cdr.car.copy();
           parent.exp.car = body;
           stack.push({
             exp: body,
-            env: env_
+            env: Cell(List(para, args), operator.env)
           });
         } else {
           me.exp.car = me.exp.car._eval(me.env);
-          parent = stack[stack.length - 2];
-          if (!(parent != null)) {
-            throw "parent 4";
-          }
-          if ((me.exp.car.special != null) && parent.exp.car === me.exp) {
-
-          } else {
+          if (!(me.exp.car.special != null) || parent.exp.car !== me.exp) {
             if (me.exp.cdr["null"] != null) {
               me.exp = parent.exp.car;
             } else {

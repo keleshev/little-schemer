@@ -156,42 +156,31 @@ class Cell
                  {exp: exp, env: env}]
         loop
             me = stack[stack.length - 1]
+            parent = stack[stack.length - 2]
+            throw 'not parent?' if not parent?
 
             if me.exp.car.pair?
                 car = me.exp.car.copy()
                 me.exp.car = car
                 stack.push exp: car, env: me.env
-            else if me.exp.car.name == 'cond'
-                parent = stack[stack.length - 2]
-                if me.exp.cdr.null?
-                    parent.exp.car = Cell('#f')
-                    stack.pop()
-                else
-                    condition = me.exp.cdr.car.car
-                    condition = Cell('#t') if condition.symbol == 'else'
-                    consequence = me.exp.cdr.car.cdr.car
-                    if condition.eval(me.env).symbol != '#f'
-                        if consequence.pair?
-                            parent.exp.car = consequence.copy()
-                            stack.pop()
-                            stack.push exp: parent.exp.car, env: me.env
-                        else
-                            parent.exp.car = consequence
-                            if consequence.pair?
-                                parent.exp.car = consequence.copy()
-                            else
-                                parent.exp.car = parent.exp.car._eval me.env
-                            stack.pop()
-                    else
-                        parent.exp.car = Cell('cond', me.exp.cdr.cdr)
-                        stack.pop()
+            else if me.exp.car.special == Cell._specialties['cond']
+                throw '(cond) with no body' if me.exp.cdr.null?
+                stack.pop()
+                condition = me.exp.cdr.car.car
+                condition = Cell('#t') if condition.symbol == 'else'
+                consequence = me.exp.cdr.car.cdr.car
+                if condition.eval(me.env).symbol != '#f'  # condition is true
+                    if consequence.pair?
+                        parent.exp.car = consequence.copy()
                         stack.push exp: parent.exp.car, env: me.env
+                    else
+                        parent.exp.car = consequence._eval me.env
+                else
+                    parent.exp.car = Cell('cond', me.exp.cdr.cdr)
+                    stack.push exp: parent.exp.car, env: me.env
             else if me.exp.car.special? or me.exp.car.primitive?
-                parent = stack[stack.length - 2]
-                throw 'parent 1' if not parent?
                 throw 'builtin not in head position' if parent.exp.car != me.exp
-                stack.pop()  # pop child
-                throw 'pop 1' if stack.length < 1
+                stack.pop()
                 parent.exp.car = me.exp._eval me.env
                 if parent.exp.cdr.null?
                     # cannot continue right, restart
@@ -203,25 +192,18 @@ class Cell
                     parent.exp.cdr = cdr
                     parent.exp = cdr
             else if me.exp.car.procedure?
-                parent = stack[stack.length - 2]
-                throw 'parent 3' if not parent?
                 throw 'proc not in head position' if parent.exp.car != me.exp
-                stack.pop()  # pop child
-                throw 'pop 1' if stack.length < 1
+                stack.pop()
                 operator = me.exp.car
                 args = me.exp.cdr
                 para = operator.procedure.cdr.car
-                body = operator.procedure.cdr.cdr.car#.copy()
-                env_ = Cell(List(para, args), operator.env)
-                parent.exp.car = body     ####.copy()?
-                stack.push exp: body, env: env_
+                body = operator.procedure.cdr.cdr.car.copy()
+                parent.exp.car = body
+                stack.push exp: body, env: Cell(List(para, args), operator.env)
             else  # me.exp.car is not pair/special/primitive/procedure
                 me.exp.car = me.exp.car._eval me.env
-                parent = stack[stack.length - 2]
-                throw "parent 4" if not parent?
-                # if special and in head position
-                if me.exp.car.special? and parent.exp.car == me.exp
-                else
+                # if not special or not in head position
+                if not me.exp.car.special? or parent.exp.car != me.exp
                     if me.exp.cdr.null?
                         # cannot continue right, restart
                         me.exp = parent.exp.car
