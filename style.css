@@ -40,22 +40,22 @@ body {
 
 
 .cm-s-default .cm-keyword {color: #708;}
-.cm-s-default .cm-atom {color: #219;}
-.cm-s-default .cm-number {color: #164;}
+.cm-s-default .cm-atom {color: black;grey;#219;}
+.cm-s-default .cm-number {color: black;grey;#164;}
 .cm-s-default .cm-def {color: #00f;}
 .cm-s-default .cm-variable {color: black; font-style: italic;}
 .cm-s-default .cm-variable-2 {color: red;}
 .cm-s-default .cm-variable-3 {color: red;}
 .cm-s-default .cm-property {color: black;}
 .cm-s-default .cm-operator {color: black;}
-.cm-s-default .cm-comment {color: #a50;}
+.cm-s-default .cm-comment {color: black;grey;#a50;}
 .cm-s-default .cm-string {color: #a11;}
 .cm-s-default .cm-string-2 {color: #f50;}
 .cm-s-default .cm-meta {color: red;#555;}
 .cm-s-default .cm-error {color: #f00;}
 .cm-s-default .cm-qualifier {color: red;#555;}
 .cm-s-default .cm-builtin {color: black; font-weight: bold;}
-.cm-s-default .cm-bracket {color: grey;#997;}
+.cm-s-default .cm-bracket {color: black;#997;}
 .cm-s-default .cm-tag {color: #170;}
 .cm-s-default .cm-attribute {color: #00c;}
 .cm-s-default .cm-header {color: blue;}
@@ -71,6 +71,21 @@ body {
 .cm-link {text-decoration: underline;}
 
 .cm-invalidchar {color: #f00;}
+div.CodeMirror span.CodeMirror-matchingbracket {
+    border-bottom: 2px solid black;
+}
+div.CodeMirror span.CodeMirror-nonmatchingbracket {color: red;}
 
-div.CodeMirror span.CodeMirror-matchingbracket {color: #0f0;}
-div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
+.CodeMirror.cm-keymap-fat-cursor div.CodeMirror-cursor {
+  width: auto;
+  height: 2em;
+  margin-left: 0px;
+  padding-top: 0.1em;
+  #border: 2px solid black;
+  background: lightgrey;
+}
+.CodeMirror div.CodeMirror-cursor {
+  padding-top: 0.1em;
+  border-left: 2px solid black;
+  margin-left: -1px;
+}

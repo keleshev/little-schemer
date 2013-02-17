@@ -8,30 +8,15 @@
   </head>
   <body>
     <textarea id="code" name="code">
-; Variables and the names of primitive operations are in italic.
-cons
-add1
-hai
-
-; Basic data, numbers, true, false, is in sans serif.
-123
-#t
-#f
-'(a b c)
-
-; Keywords, bold
-define
-lambda
-cond
-
 (define map
   (lambda (f l)
     (cond
       ((null? l) l)
       (else (cons (f (car l))
-            (map f (cdr l)))))))
+                  (map f (cdr l)))))))
 
 (map add1 '(1 2 3 4 5))
+(quote (define hai))
 
 (define +
   (lambda (n m)
@@ -40,9 +25,9 @@ cond
 
 (+ 1000 1)</textarea>
     <script src="lib/codemirror.js"></script>
-    <script src="lib/scheme.js"></script>
     <script src="lib/vim.js"></script>
     <script src="lib/matchbrackets.js"></script>
+    <script src="var/scheme.js"></script>
     <script src="little.js"></script>
     <script src="app.js"></script>
   </body>
