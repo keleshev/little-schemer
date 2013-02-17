@@ -8,8 +8,11 @@
     keyMap: location.hash === '#vi' ? 'vim' : 'default',
     lineWrapping: true,
     autofocus: true,
-    showCursorWhenSelecting: true
+    showCursorWhenSelecting: true,
+    matchBrackets: true
   });
+
+  window.editor = editor;
 
   elements = [];
 

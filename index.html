@@ -3,11 +3,27 @@
   <head>
     <meta charset="utf-8">
 
-    <link rel="stylesheet" href="codemirror/codemirror.css">
-    <link rel="stylesheet" href="codemirror/customizations.css">
+    <link rel="stylesheet" href="lib/codemirror.css">
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <textarea id="code" name="code">
+; Variables and the names of primitive operations are in italic.
+cons
+add1
+hai
+
+; Basic data, numbers, true, false, is in sans serif.
+123
+#t
+#f
+'(a b c)
+
+; Keywords, bold
+define
+lambda
+cond
+
 (define map
   (lambda (f l)
     (cond
@@ -23,7 +39,10 @@
           (else (+ (sub1 n) (add1 m))))))
 
 (+ 1000 1)</textarea>
-    <script src="codemirror/codemirror.js"></script>
+    <script src="lib/codemirror.js"></script>
+    <script src="lib/scheme.js"></script>
+    <script src="lib/vim.js"></script>
+    <script src="lib/matchbrackets.js"></script>
     <script src="little.js"></script>
     <script src="app.js"></script>
   </body>

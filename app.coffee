@@ -5,6 +5,9 @@ editor = CodeMirror.fromTextArea document.getElementById('code'),
     lineWrapping: true,
     autofocus: true,
     showCursorWhenSelecting: true
+    matchBrackets: true
+
+window.editor = editor
 
 elements = []
 run = (editor) ->
