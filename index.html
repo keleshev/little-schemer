@@ -5,9 +5,6 @@
 
     <link rel="stylesheet" href="codemirror/codemirror.css">
     <link rel="stylesheet" href="codemirror/customizations.css">
-    <script src="codemirror/codemirror.js"></script>
-
-    <script src="little.js"></script>
   </head>
   <body>
     <textarea id="code" name="code">
@@ -25,51 +22,9 @@
     (cond ((zero? n) m)
           (else (+ (sub1 n) (add1 m))))))
 
-(+ 1000 1)
-</textarea>
-    <script>
-      var keyMap = location.hash === '#vi' ? 'vim' : 'default';
-      editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-        lineNumbers: false,
-        mode: "scheme",
-        keyMap: keyMap,
-        lineWrapping: true,
-        autofocus: true,
-        showCursorWhenSelecting: true
-      });
-      //editor.markText({line:0, ch:1}, {line:0, ch:7}, {className: 'warning'})
-      //var element = document.createElement('span')
-      //element.style.color = '#aaa'
-      var elements = []//document.createElement('div')
-      var run = function (cm) {
-        results = little.eval(cm.getValue().trimRight())
-        results.forEach(function (result) {
-            var element = document.createElement('span')
-            if (result.result.match(/^error/)) {
-              element.style.color = 'brown'
-            } else {
-              element.style.color = 'green'
-            }
-            element.innerText = result.result
-            element.innerHTML = '&nbsp;&rArr; ' + element.innerHTML
-            cm.addWidget({line: result.line, ch: 100}, element)
-            //elements.appendChild(element)
-            elements.push(element)
-        })
-        //element.innerHTML = '&nbsp;&rArr; ' + result
-        //cm.addWidget({line: 10, ch: 0}, element)
-        //alert(little.eval(cm.getValue()))
-      }
-      CodeMirror.keyMap.default['Shift-Enter'] = run
-      CodeMirror.keyMap.vim['Shift-Enter'] = run
-      editor.on('change', function (cm, change) {
-        //Array(elements.children).forEach(function (element) {
-        //  element.parentNode.removeChild(element)
-        //})
-        elements.forEach(function (element) {
-          element.style.left = '-100000px'
-        })
-      })
-    </script>
+(+ 1000 1)</textarea>
+    <script src="codemirror/codemirror.js"></script>
+    <script src="little.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>
