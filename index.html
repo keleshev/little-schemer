@@ -26,7 +26,6 @@
           (else (+ (sub1 n) (add1 m))))))
 
 (+ 1000 1)
-(+ 10000 1)
 </textarea>
     <script>
       var keyMap = location.hash === '#vi' ? 'vim' : 'default';
@@ -46,7 +45,11 @@
         results = little.eval(cm.getValue().trimRight())
         results.forEach(function (result) {
             var element = document.createElement('span')
-            element.style.color = 'brown'
+            if (result.result.match(/^error/)) {
+              element.style.color = 'brown'
+            } else {
+              element.style.color = 'green'
+            }
             element.innerText = result.result
             element.innerHTML = '&nbsp;&rArr; ' + element.innerHTML
             cm.addWidget({line: result.line, ch: 100}, element)

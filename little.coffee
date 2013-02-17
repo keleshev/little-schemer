@@ -4,6 +4,12 @@ print = -> console.log arguments...
 DELIMITER = /(\s|\))/
 
 
+count_newlines = (source) ->
+    newlines = source.match /\n/g
+    newlines = [] if not newlines?
+    return newlines.length
+
+
 define = (args, env) ->
     dvar = args.car
     dval = args.cdr.car
@@ -97,12 +103,12 @@ class Cell
             return [Cell(null), source[1..]]
         [car, rest] = @_read(source)
         rest = rest.trim()
-        throw 'missing right paren' if rest == ''
+        throw 'missing ")"' if rest == ''
         if rest[0] == '.'
-            throw 'missing right paren' if rest[1..] == ''
+            throw 'missing ")"' if rest[1..] == ''
             throw 'no delimiter after dot' if not DELIMITER.test rest[1]
             [cdr, rest] = @_read(rest[1..])
-            throw 'missing right paren' if rest[0] != ')'
+            throw 'missing ")"' if rest[0] != ')'
             return [Cell(car, cdr), rest[1..]]
         [cdr, rest] = @_read_pair(rest)
         return [Cell(car, cdr), rest]
@@ -218,14 +224,24 @@ class Cell
 
     @evaluate: (source) ->
         env = Cell.default_env()
-        result = []
+        results = []
         line = 0
         while source != ''
-            [parsed, rest] = Cell._read(source)
-            line = source.replace(rest, '').match(/\n/g).length + line
+            try
+                [parsed, rest] = Cell._read(source)
+            catch error
+                line += count_newlines source
+                results.push line: line, result: "error: #{error}"
+                break
+            line += count_newlines source.replace(rest, '')
             source = rest
-            result.push line: line, result: parsed.eval(env).write()
-        return result
+            try
+                result = parsed.eval(env).write()
+            catch error
+                results.push line: line, result: "error: #{error}"
+                break
+            results.push line: line, result: result
+        return results
 
     @default_env: ->
         env = @read('((() ()))')

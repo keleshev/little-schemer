@@ -80,9 +80,9 @@ test 'read', ->
     assert Cell.read("'(hai bye)").write() == '(quote (hai bye))'
     assert Cell.read('(hai . bye)').write() == '(hai . bye)'
     assert Cell.read('(hai . bye)').cdr.write() == 'bye'
-    assert.raises 'missing right paren', ->
+    assert.raises 'missing ")"', ->
         Cell.read('(')
-    assert.raises 'missing right paren', ->
+    assert.raises 'missing ")"', ->
         Cell.read('(hai ')
     assert.raises 'no delimiter after dot', ->
         Cell.read('(hai .a)')
@@ -178,4 +178,10 @@ test 'integration', ->
         {line: 3, result: 'ok'}
         {line: 5, result: '(2 3 4 5 6)'}
         {line: 6, result: '(2 3 4 5 6)'}
+    ]
+
+test 'missing paren', ->
+    assert.equal Cell.evaluate("'hai \n (add1 (sub1 1)"), [
+        {line: 0, result: 'hai'}
+        {line: 1, result: 'error: missing ")"'}
     ]
