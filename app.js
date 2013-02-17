@@ -20,10 +20,12 @@
     var results;
     results = little["eval"](editor.getValue().trimRight());
     return results.forEach(function(_arg) {
-      var element, line, result;
+      var color, element, line, result;
       line = _arg.line, result = _arg.result;
       element = document.createElement('span');
-      element.style.color = result.match(/^error/) ? 'brown' : 'green';
+      color = result.match(/^error/) ? 'brown' : 'green';
+      element.style.color = color;
+      element.style.textShadow = "0px 0px 70px " + color;
       element.innerText = result;
       element.innerHTML = '&nbsp;&rArr; ' + element.innerHTML;
       editor.addWidget({
@@ -43,5 +45,7 @@
       return element.style.left = '-100000px';
     });
   });
+
+  run(editor);
 
 }).call(this);

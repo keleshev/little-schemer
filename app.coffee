@@ -14,7 +14,9 @@ run = (editor) ->
     results = little.eval editor.getValue().trimRight()
     results.forEach ({line, result}) ->
         element = document.createElement 'span'
-        element.style.color = if result.match /^error/ then 'brown' else 'green'
+        color = if result.match /^error/ then 'brown' else 'green'
+        element.style.color = color
+        element.style.textShadow="0px 0px 70px #{color}"
         element.innerText = result
         element.innerHTML = '&nbsp;&rArr; ' + element.innerHTML
         editor.addWidget {line: line, ch: 1000}, element
@@ -26,3 +28,5 @@ CodeMirror.keyMap.vim['Shift-Enter'] = run
 editor.on 'change', (editor, change) ->
     elements.forEach (element) ->
         element.style.left = '-100000px'
+
+run(editor)
