@@ -12,8 +12,6 @@
     matchBrackets: true
   });
 
-  window.editor = editor;
-
   elements = [];
 
   run = function(editor) {
@@ -25,7 +23,7 @@
       element = document.createElement('span');
       color = result.match(/^error/) ? 'brown' : 'green';
       element.style.color = color;
-      element.style.textShadow = "0px 0px 70px " + color;
+      element.style.textShadow = "0px 0px 60px " + color;
       element.innerText = result;
       element.innerHTML = '&nbsp;&rArr; ' + element.innerHTML;
       editor.addWidget({
@@ -47,5 +45,10 @@
   });
 
   run(editor);
+
+  window.app = {
+    run: run,
+    editor: editor
+  };
 
 }).call(this);

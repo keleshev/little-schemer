@@ -1,5 +1,8 @@
 /*body {width: 1000px; margin: auto;}*/
 body {
+    font-size: 24px;
+    font-family: Georgia, serif;
+    #font-family: monospace;
     margin: 0;
     padding: 0;
 }
@@ -9,6 +12,56 @@ body {
     display: inline;
 }
 
+#menu {
+    padding: 25px 25px 0px 25px;
+    position: absolute;
+    margin-left: 80%;
+    #width: 225px;
+    #height: 500px;
+    top: 0;
+    right: 0;
+    z-index: 1000;
+    border-left: 1px solid #bbb;
+    border-bottom: 1px solid #bbb;
+    border-radius: 0 0 0 5px;
+    box-shadow: 0px 0px 7px #bbb;
+    text-align: center;
+}
+
+#run {
+    font-size: 24px;
+    #font-family: Georgia, serif;
+    font-family: monospace;
+
+    background-color: black;
+    color: white;
+    text-decoration: none;
+    padding: 0px 10px 3px 12px;
+    border-radius: 5px;
+}
+
+#run:hover {
+    background-color: green;
+}
+
+#toggle {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    text-decoration: none;
+    border-bottom: 2px dotted;
+    z-index: 2000;
+}
+
+a {
+    color: darkblue;
+}
+
+small {
+    font-size: 16px;
+    bottom: 1px;
+
+}
 
 .CodeMirror-lines {
   padding: 0px 0; /* Vertical padding around content */
@@ -88,4 +141,13 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: red;}
   padding-top: 0.1em;
   border-left: 2px solid black;
   margin-left: -1px;
+}
+/* auto-resizing */
+.CodeMirror {
+  border: 0px solid #eee;
+  height: auto;
+}
+.CodeMirror-scroll {
+  overflow-y: hidden;
+  overflow-x: auto;
 }

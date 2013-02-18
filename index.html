@@ -23,8 +23,46 @@
     (cond ((zero? n) m)
           (else (+ (sub1 n) (add1 m))))))
 
-(+ 1000 1)
-(+ 1000 1</textarea>
+(+ 100 200
+</textarea>
+
+    <script>
+      toggle_menu = function () {
+        var menu = document.getElementById('menu');
+        var toggle = document.getElementById('toggle');
+        if (toggle.innerText === 'hide') {
+          menu.style.visibility = 'hidden';
+          toggle.innerText = 'show';
+        } else {
+          menu.style.visibility = '';
+          toggle.innerText = 'hide';
+        }
+      };
+    </script>
+    <small>
+      <a id="toggle" href="javascript:void(0)" onclick="toggle_menu()">hide</a>
+    </small>
+    <div id="menu">
+      <center>
+        <p>
+          <img src="img/elephant.gif" width="150"/>
+          <br />
+          <a href="http://www.amazon.com/exec/obidos/ASIN/0262560992/">
+            buy the book
+          </a>
+        </p>
+        <p>
+          <img src="img/video.gif" width="150"/>
+          <br />
+          <a href="http://www.amazon.com/exec/obidos/ASIN/0262560992/">
+            watch the video
+          </a>
+        </p>
+        <p>
+          <a id="run" href="javascript:void(0)" onclick="app.run(app.editor)">Run &rArr;</a><br /><small>(Shift&#8209;Enter)</small>
+        </p>
+      </center>
+    </div>
     <script src="lib/codemirror.js"></script>
     <script src="lib/vim.js"></script>
     <script src="lib/matchbrackets.js"></script>

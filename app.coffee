@@ -7,8 +7,6 @@ editor = CodeMirror.fromTextArea document.getElementById('code'),
     showCursorWhenSelecting: true
     matchBrackets: true
 
-window.editor = editor
-
 elements = []
 run = (editor) ->
     results = little.eval editor.getValue().trimRight()
@@ -16,7 +14,7 @@ run = (editor) ->
         element = document.createElement 'span'
         color = if result.match /^error/ then 'brown' else 'green'
         element.style.color = color
-        element.style.textShadow="0px 0px 70px #{color}"
+        element.style.textShadow="0px 0px 60px #{color}"
         element.innerText = result
         element.innerHTML = '&nbsp;&rArr; ' + element.innerHTML
         editor.addWidget {line: line, ch: 1000}, element
@@ -30,3 +28,5 @@ editor.on 'change', (editor, change) ->
         element.style.left = '-100000px'
 
 run(editor)
+
+window.app = {run, editor}
