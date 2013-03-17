@@ -26,6 +26,7 @@ CodeMirror.keyMap.vim['Shift-Enter'] = run
 editor.on 'change', (editor, change) ->
     elements.forEach (element) ->
         element.style.left = '-100000px'
+    run(editor)
 
 run(editor)
 

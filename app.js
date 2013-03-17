@@ -39,9 +39,10 @@
   CodeMirror.keyMap.vim['Shift-Enter'] = run;
 
   editor.on('change', function(editor, change) {
-    return elements.forEach(function(element) {
+    elements.forEach(function(element) {
       return element.style.left = '-100000px';
     });
+    return run(editor);
   });
 
   run(editor);
