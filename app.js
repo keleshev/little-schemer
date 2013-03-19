@@ -12,6 +12,10 @@
     matchBrackets: true
   });
 
+  if (localStorage.getItem('editor')) {
+    editor.setValue(localStorage.getItem('editor'));
+  }
+
   elements = [];
 
   run = function(editor) {
@@ -42,6 +46,7 @@
     elements.forEach(function(element) {
       return element.style.left = '-100000px';
     });
+    localStorage.setItem('editor', editor.getValue());
     return run(editor);
   });
 

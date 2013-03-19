@@ -7,6 +7,9 @@ editor = CodeMirror.fromTextArea document.getElementById('code'),
     showCursorWhenSelecting: true
     matchBrackets: true
 
+if localStorage.getItem 'editor'
+    editor.setValue localStorage.getItem 'editor'
+
 elements = []
 run = (editor) ->
     results = little.eval editor.getValue().trimRight()
@@ -26,6 +29,7 @@ CodeMirror.keyMap.vim['Shift-Enter'] = run
 editor.on 'change', (editor, change) ->
     elements.forEach (element) ->
         element.style.left = '-100000px'
+    localStorage.setItem 'editor', editor.getValue()
     run(editor)
 
 run(editor)
