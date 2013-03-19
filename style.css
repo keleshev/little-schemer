@@ -1,23 +1,13 @@
-/*body {width: 1000px; margin: auto;}*/
 body {
     font-size: 24px;
     font-family: Georgia, serif;
-    #font-family: monospace;
     margin: 0;
     padding: 0;
 }
 
-.warning {
-    border-bottom: 1px dotted red;
-    display: inline;
-}
-
 #menu {
-    padding: 25px 25px 0px 25px;
+    padding: 30px 30px 10px 30px;
     position: absolute;
-    margin-left: 80%;
-    #width: 225px;
-    #height: 500px;
     top: 0;
     right: 0;
     z-index: 1000;
@@ -28,39 +18,14 @@ body {
     text-align: center;
 }
 
-#run {
-    font-size: 24px;
-    #font-family: Georgia, serif;
-    font-family: monospace;
-
-    background-color: black;
-    color: white;
-    text-decoration: none;
-    padding: 0px 10px 3px 12px;
-    border-radius: 5px;
-}
-
-#run:hover {
-    background-color: green;
-}
-
 #toggle {
+    font-size: 16px;
     position: absolute;
     right: 10px;
     top: 5px;
     text-decoration: none;
     border-bottom: 2px dotted;
     z-index: 2000;
-}
-
-a {
-    color: darkblue;
-}
-
-small {
-    font-size: 16px;
-    bottom: 1px;
-
 }
 
 .CodeMirror-lines {
