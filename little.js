@@ -208,7 +208,7 @@
     };
 
     Cell.prototype["eval"] = function(env) {
-      var args, body, car, cdr, condition, consequence, exp, grandpa, me, operator, para, parent, stack;
+      var args, body, car, cdr, condition, consequence, counter, exp, grandpa, me, operator, para, parent, stack;
       if (env == null) {
         env = null;
       }
@@ -225,11 +225,16 @@
           env: env
         }
       ];
+      counter = 0;
       while (true) {
         me = stack[stack.length - 1];
         parent = stack[stack.length - 2];
         if (!(parent != null)) {
           throw 'not parent?';
+        }
+        counter += 1;
+        if (counter > 20000) {
+          throw 'too much recursion';
         }
         if (me.exp.car.pair != null) {
           car = me.exp.car.copy();

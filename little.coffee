@@ -160,10 +160,13 @@ class Cell
         exp = Cell(this, Cell(null))
         stack = [{exp: Cell(exp, Cell(null)), env: env},
                  {exp: exp, env: env}]
+        counter = 0
         loop
             me = stack[stack.length - 1]
             parent = stack[stack.length - 2]
             throw 'not parent?' if not parent?
+            counter += 1
+            throw 'too much recursion' if counter > 20000
 
             if me.exp.car.pair?
                 car = me.exp.car.copy()
