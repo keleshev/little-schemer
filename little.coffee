@@ -13,6 +13,15 @@ count_newlines = (source) ->
 define = (args, env) ->
     dvar = args.car
     dval = args.cdr.car
+    if dvar.symbol == '+' and dval.procedure?
+        original = env
+        extended = Cell(List(List('+'), List(dval)), env)
+        dval.env = extended
+        if Cell.read('(+ 10 20)').eval(extended).write() == '30'
+            dval.primitive = (args) ->
+                Cell(args.car.number + args.cdr.car.number)
+        else
+            dval.env = original
     frame = env.car
     vars = frame.car
     vals = frame.cdr.car
@@ -83,6 +92,11 @@ class Cell
             @atom = true
         else if args[0].special?
             @special = args[0].special
+            @name = args[0].name
+        else if args[0].primitive? and args[0].procedure?
+            @primitive = args[0].primitive
+            @procedure = args[0].procedure
+            @env = args[0].env
             @name = args[0].name
         else if args[0].primitive?
             @primitive = args[0].primitive
@@ -295,10 +309,10 @@ class Cell
             '()'
         else if @number?
             @number.toString()
-        else if @primitive? or @special?
-            '#' + @name
         else if @procedure?
             '#' + @procedure.write()
+        else if @primitive? or @special?
+            '#' + @name
         else
             throw 'write error'
 

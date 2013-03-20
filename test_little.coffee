@@ -180,8 +180,20 @@ test 'integration', ->
         {line: 6, result: '(2 3 4 5 6)'}
     ]
 
+
 test 'missing paren', ->
     assert.equal Cell.evaluate("'hai \n (add1 (sub1 1)"), [
         {line: 0, result: 'hai'}
         {line: 1, result: 'error: missing ")"'}
     ]
+
+
+test 'optimize procedure', ->
+    proc =
+        procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
+        primitive: (args) -> Cell(42)
+        env: Cell.default_env()
+    assert Cell(proc).procedure?
+    assert Cell(proc).primitive?
+    assert Cell(proc).write().indexOf('(lambda (a) (add1 (add1 a)))') != -1
+    assert List(List('quote', proc), 1).eval().write() == '42'

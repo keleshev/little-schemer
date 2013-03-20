@@ -19,9 +19,21 @@
   };
 
   define = function(args, env) {
-    var dval, dvar, frame, vals, vars;
+    var dval, dvar, extended, frame, original, vals, vars;
     dvar = args.car;
     dval = args.cdr.car;
+    if (dvar.symbol === '+' && (dval.procedure != null)) {
+      original = env;
+      extended = Cell(List(List('+'), List(dval)), env);
+      dval.env = extended;
+      if (Cell.read('(+ 10 20)')["eval"](extended).write() === '30') {
+        dval.primitive = function(args) {
+          return Cell(args.car.number + args.cdr.car.number);
+        };
+      } else {
+        dval.env = original;
+      }
+    }
     frame = env.car;
     vars = frame.car;
     vals = frame.cdr.car;
@@ -106,6 +118,11 @@
         this.atom = true;
       } else if (args[0].special != null) {
         this.special = args[0].special;
+        this.name = args[0].name;
+      } else if ((args[0].primitive != null) && (args[0].procedure != null)) {
+        this.primitive = args[0].primitive;
+        this.procedure = args[0].procedure;
+        this.env = args[0].env;
         this.name = args[0].name;
       } else if (args[0].primitive != null) {
         this.primitive = args[0].primitive;
@@ -476,10 +493,10 @@
         return '()';
       } else if (this.number != null) {
         return this.number.toString();
-      } else if ((this.primitive != null) || (this.special != null)) {
-        return '#' + this.name;
       } else if (this.procedure != null) {
         return '#' + this.procedure.write();
+      } else if ((this.primitive != null) || (this.special != null)) {
+        return '#' + this.name;
       } else {
         throw 'write error';
       }
