@@ -91,9 +91,7 @@ test 'read', ->
     assert Cell.read('1').number == 1
 
 
-evaluate = (expr, env=null) ->
-    if env?
-        env = Cell.read(env)
+evaluate = (expr, env=[]) ->
     Cell.read(expr).eval(env).write()
 
 
@@ -104,26 +102,28 @@ test 'eval', ->
     assert evaluate('#f') == '#f'
     assert evaluate("'a") == 'a'
     assert evaluate('(quote (0 #t a))') == '(0 #t a)'
-    assert evaluate('a', '( ((a)(1)) )') == '1'
-    assert evaluate('b', '( ((a b)(1 2)) )') == '2'
-    assert evaluate('b', '( ((a)(1)) ((b)(2)) )') == '2'
+    assert evaluate('a', [{a: Cell(1)}]) == '1'
+    assert evaluate('b', [{a: Cell(1), b: Cell(2)}]) == '2'
+    assert evaluate('b', [{a: Cell(1)}, {b: Cell(2)}]) == '2'
     assert.raises 'unbound variable b', ->
-        evaluate('b', '( ((a)(1)) )')
+        evaluate('b', [{a: 1}])
+
 
 test 'environments', ->
-    env = Cell(Cell.read('((x) (9))'), Cell.default_env())
-    env = Cell(Cell.read('(() ())'), env)
+    env = Cell.default_env()
+    env.push({x: Cell(9)})
+    env.push({})
     List('define', 'a', 1).eval(env)
-    assert env.car.write() == '((a) (1))'
-    assert env.cdr.car.write() == '((x) (9))'
+    assert env[1]['x'].write() == '9'
+    assert env[2]['a'].write() == '1'
 
     List('define', 'a', 2).eval(env)
-    assert env.car.write() == '((a) (2))'
-    assert env.cdr.car.write() == '((x) (9))'
+    assert env[1]['x'].write() == '9'
+    assert env[2]['a'].write() == '2'
 
-    List('set!', 'x', 8).eval(env)
-    assert env.car.write() == '((a) (2))'
-    assert env.cdr.car.write() == '((x) (8))'
+    List('define', 'x', 8).eval(env)
+    assert env[1]['x'].write() == '9'
+    assert env[2]['x'].write() == '8'
 
 
 test 'cond', ->
@@ -158,7 +158,7 @@ test 'specialties', ->
 test 'procedures', ->
     proc =
         procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
-        env: Cell.default_env()
+        env: []#Cell.default_env()
     assert Cell(proc).procedure?
     assert Cell(proc).write().indexOf('(lambda (a) (add1 (add1 a)))') != -1
     assert List(List('quote', proc), 1).eval().write() == '3'

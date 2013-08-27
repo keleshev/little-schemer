@@ -10,61 +10,42 @@ count_newlines = (source) ->
     return newlines.length
 
 
-define = (args, env) ->
-    dvar = args.car
-    dval = args.cdr.car
-    if dvar.symbol == '+' and dval.procedure?
-        original = env
-        extended = Cell(List(List('+'), List(dval)), env)
-        dval.env = extended
+optimize = (name, value) ->
+    if name == '+' and value.procedure?
+        extended = env[..]
+        extended.push({'+': value})
+        value.env = extended
         if Cell.read('(+ 10 20)').eval(extended).write() == '30'
-            dval.primitive = (args) ->
+            value.primitive = (args) ->
                 Cell(args.car.number + args.cdr.car.number)
         else
-            dval.env = original
-    frame = env.car
-    vars = frame.car
-    vals = frame.cdr.car
-    while not vars.null?
-        if vars.car.symbol == dvar.symbol
-            vals.car = dval
-            return 'ok'
-        vars = vars.cdr
-        vals = vals.cdr
-    frame.car = Cell(dvar, frame.car)
-    frame.cdr.car = Cell(dval, frame.cdr.car)
+            value.env = env
+    value
+
+
+define = (args, env) ->
+    name = args.car.symbol
+    value = args.cdr.car
+    value = optimize(name, value)
+    env[env.length - 1][name] = value
     return 'ok'
 
 
 lookup = (exp, env) ->
-    while not env.null?
-        frame = env.car
-        vars = frame.car
-        vals = frame.cdr.car
-        while not vars.null?
-            if vars.car.symbol == exp.symbol
-                return vals.car
-            vars = vars.cdr
-            vals = vals.cdr
-        env = env.cdr
+    for _, frame of env
+        for name, value of frame
+            return value if name == exp.symbol
+    for name, value of Cell.default_env()[0]
+        return value if name == exp.symbol
     throw "unbound variable #{exp.write()}"
 
 
-set = (args, env) ->
-    svar = args.car
-    sval = args.cdr.car
-    while not env.null?
-        frame = env.car
-        vars = frame.car
-        vals = frame.cdr.car
-        while not vars.null?
-            if vars.car.symbol == svar.symbol
-                vals.car = sval
-                return 'ok'
-            vars = vars.cdr
-            vals = vals.cdr
-        env = env.cdr
-    throw "unbound variable #{svar.write()}"
+frame = (para, args) ->
+    fr = {}
+    while not para.null?
+        fr[para.car.symbol] = args.car
+        [para, args] = [para.cdr, args.cdr]
+    fr
 
 
 class Cell
@@ -167,10 +148,7 @@ class Cell
         throw 'copy works only on pairs' if not @car? or not @cdr? or not @pair?
         Cell(@car, @cdr)
 
-    eval: (env=null) ->
-        if not env?
-            env = Cell.default_env()
-
+    eval: (env=[]) ->
         exp = Cell(this, Cell(null))
         stack = [{exp: Cell(exp, Cell(null)), env: env},
                  {exp: exp, env: env}]
@@ -222,7 +200,9 @@ class Cell
                 para = operator.procedure.cdr.car
                 body = operator.procedure.cdr.cdr.car.copy()
                 parent.exp.car = body
-                stack.push exp: body, env: Cell(List(para, args), operator.env)
+                new_env = operator.env.concat frame(para, args)
+                #stack.push exp: body, env: Cell(List(para, args), operator.env)
+                stack.push exp: body, env: new_env
             else  # me.exp.car is not pair/special/primitive/procedure
                 me.exp.car = me.exp.car._eval me.env
                 # if not special or not in head position
@@ -261,11 +241,11 @@ class Cell
         return results
 
     @default_env: ->
-        env = @read('((() ()))')
+        env = [{}]
         for name, func of @_specialties
-            define(List(name, special: func, name: name), env)
+            env[0][name] = special: func, name: name
         for name, func of @_primitives
-            define(List(name, primitive: func, name: name), env)
+            env[0][name] = primitive: func, name: name
         return env
 
     @_primitives:
@@ -285,7 +265,6 @@ class Cell
         'define': (args, env) ->
             args.cdr.car = args.cdr.car.eval(env)
             define(args, env)
-        'set!': (args, env) -> set(args, env)
         'env': (args, env) -> env
         'lambda': (args, env) -> procedure: Cell('lambda', args), env: env
         'cond': (args, env) -> throw 'placeholder; should not be called'
