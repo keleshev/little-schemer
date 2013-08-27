@@ -1,5 +1,5 @@
 {test, assert, print} = require './ytest.coffee'
-{Cell, List} = require './little.coffee'
+{Cell, List, Env} = require './little.coffee'
 
 
 test 'pair', ->
@@ -91,7 +91,7 @@ test 'read', ->
     assert Cell.read('1').number == 1
 
 
-evaluate = (expr, env=[]) ->
+evaluate = (expr, env=Env()) ->
     Cell.read(expr).eval(env).write()
 
 
@@ -102,28 +102,25 @@ test 'eval', ->
     assert evaluate('#f') == '#f'
     assert evaluate("'a") == 'a'
     assert evaluate('(quote (0 #t a))') == '(0 #t a)'
-    assert evaluate('a', [{a: Cell(1)}]) == '1'
-    assert evaluate('b', [{a: Cell(1), b: Cell(2)}]) == '2'
-    assert evaluate('b', [{a: Cell(1)}, {b: Cell(2)}]) == '2'
+    assert evaluate('a', Env(a: Cell(1))) == '1'
+    assert evaluate('b', Env(a: Cell(1), b: Cell(2))) == '2'
+    assert evaluate('b', Env({a: Cell(1)}, {b: Cell(2)})) == '2'
     assert.raises 'unbound variable b', ->
-        evaluate('b', [{a: 1}])
+        evaluate('b', Env(a: 1))
 
 
 test 'environments', ->
-    env = Cell.default_env()
-    env.push({x: Cell(9)})
-    env.push({})
-    List('define', 'a', 1).eval(env)
-    assert env[1]['x'].write() == '9'
-    assert env[2]['a'].write() == '1'
+    assert Env(x: 0).extend()['=='] Env({x: 0}, {})
+    assert Env().extend(Env(x: 0))['=='] Env({}, {x: 0})
 
-    List('define', 'a', 2).eval(env)
-    assert env[1]['x'].write() == '9'
-    assert env[2]['a'].write() == '2'
+    assert Env().define('a', 1)['=='] Env(a: 1)
+    assert Env(a: 1).lookup('a') == 1
 
-    List('define', 'x', 8).eval(env)
-    assert env[1]['x'].write() == '9'
-    assert env[2]['x'].write() == '8'
+    assert Env(a: 1).define('a', 2)['=='] Env(a: 2)
+    assert Env({a: 1}, {}).define('a', 2)['=='] Env({a: 1}, {a: 2})
+
+    assert Env().lookup('define').special?
+    assert Env().lookup('car').primitive?
 
 
 test 'cond', ->
@@ -134,20 +131,18 @@ test 'cond', ->
 
 
 test 'primitives', ->
-    env = Cell.default_env()
-
     assert Cell(primitive: true, name: 'hai').primitive?
     assert Cell(primitive: true, name: 'hai').write().indexOf('hai') != -1
 
-    assert List('add1', 1).eval(env).number == 2
-    assert List('eq?', '#t', '#t').eval(env).symbol == '#t'
+    assert List('add1', 1).eval().number == 2
+    assert List('eq?', '#t', '#t').eval().symbol == '#t'
 
-    assert Cell.read('(add1 (sub1 5))').eval(env).write() == '5'
-    assert Cell.read('(zero? (sub1 1))').eval(env).write() == '#t'
-    assert Cell.read('(car (cons 0 1))').eval(env).write() == '0'
-    assert Cell.read('(cdr (cons 0 1))').eval(env).write() == '1'
-    assert Cell.read('(number? 1))').eval(env).write() == '#t'
-    assert Cell.read('(number? #t))').eval(env).write() == '#f'
+    assert Cell.read('(add1 (sub1 5))').eval().write() == '5'
+    assert Cell.read('(zero? (sub1 1))').eval().write() == '#t'
+    assert Cell.read('(car (cons 0 1))').eval().write() == '0'
+    assert Cell.read('(cdr (cons 0 1))').eval().write() == '1'
+    assert Cell.read('(number? 1))').eval().write() == '#t'
+    assert Cell.read('(number? #t))').eval().write() == '#f'
 
 
 test 'specialties', ->
@@ -158,7 +153,7 @@ test 'specialties', ->
 test 'procedures', ->
     proc =
         procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
-        env: []#Cell.default_env()
+        env: Env()
     assert Cell(proc).procedure?
     assert Cell(proc).write().indexOf('(lambda (a) (add1 (add1 a)))') != -1
     assert List(List('quote', proc), 1).eval().write() == '3'
@@ -192,7 +187,7 @@ test 'optimize procedure', ->
     proc =
         procedure: Cell.read('(lambda (a) (add1 (add1 a)))')
         primitive: (args) -> Cell(42)
-        env: Cell.default_env()
+        env: Env()
     assert Cell(proc).procedure?
     assert Cell(proc).primitive?
     assert Cell(proc).write().indexOf('(lambda (a) (add1 (add1 a)))') != -1

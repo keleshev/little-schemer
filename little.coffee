@@ -12,32 +12,9 @@ count_newlines = (source) ->
 
 optimize = (name, value) ->
     if name == '+' and value.procedure?
-        extended = env[..]
-        extended.push({'+': value})
-        value.env = extended
-        if Cell.read('(+ 10 20)').eval(extended).write() == '30'
+        if List(value, 10, 20).eval().number == 30
             value.primitive = (args) ->
                 Cell(args.car.number + args.cdr.car.number)
-        else
-            value.env = env
-    value
-
-
-define = (args, env) ->
-    name = args.car.symbol
-    value = args.cdr.car
-    value = optimize(name, value)
-    env[env.length - 1][name] = value
-    return 'ok'
-
-
-lookup = (exp, env) ->
-    for _, frame of env
-        for name, value of frame
-            return value if name == exp.symbol
-    for name, value of Cell.default_env()[0]
-        return value if name == exp.symbol
-    throw "unbound variable #{exp.write()}"
 
 
 frame = (para, args) ->
@@ -46,6 +23,55 @@ frame = (para, args) ->
         fr[para.car.symbol] = args.car
         [para, args] = [para.cdr, args.cdr]
     fr
+
+
+class Env
+
+    constructor: (env...) ->
+        @_env = if env.length == 0 then [{}] else env
+        return new Env(env...) if this not instanceof Env
+
+    '==': (other) ->
+        json = JSON.stringify
+        other instanceof Env and json(@_env) == json(other._env)
+
+    define: (name, value) ->
+        optimize(name, value)
+        @_env[@_env.length - 1][name] = value
+        this
+
+    extend: (env=Env()) ->
+        Env(@_env.concat(env._env)...)
+
+    lookup: (lookup) ->
+        for i in [0..(@_env.length - 1)]
+            for name, value of @_env[i]
+                return value if name is lookup
+        for name, func of @_primitives
+            return Cell(primitive: func, name: name) if name is lookup
+        for name, func of @_specialties
+            return Cell(special: func, name: name) if name is lookup
+        throw "unbound variable #{lookup}"
+
+    _primitives:
+        'null?': (args) -> if args.car.null? then '#t' else '#f'
+        'atom?': (args) -> if args.car.atom? then '#t' else '#f'
+        'eq?': (args) -> if args.car.is_eq args.cdr.car then '#t' else '#f'
+        'cons': (args) -> Cell(args.car, args.cdr.car)
+        'car': (args) -> args.car.car
+        'cdr': (args) -> args.car.cdr
+        'zero?': (args) -> if args.car.number == 0 then '#t' else '#f'
+        'add1': (args) -> args.car.number + 1
+        'sub1': (args) -> args.car.number - 1
+        'number?': (args) -> if args.car.number? then '#t' else '#f'
+
+    _specialties:
+        'quote': (args, env) -> args.car
+        'define': (args, env) ->
+            env.define(args.car.symbol, args.cdr.car.eval(env)) && 'ok'
+        'env': (args, env) -> env
+        'lambda': (args, env) -> procedure: Cell('lambda', args), env: env
+        'cond': (args, env) -> throw 'placeholder; should not be called'
 
 
 class Cell
@@ -130,7 +156,7 @@ class Cell
         if exp.self_evaluating?
             return exp
         else if exp.symbol?
-            return lookup(exp, env)
+            return env.lookup(exp.symbol)
         else if exp.pair? and exp.car.special?
             operator = exp.car
             args = exp.cdr
@@ -148,7 +174,7 @@ class Cell
         throw 'copy works only on pairs' if not @car? or not @cdr? or not @pair?
         Cell(@car, @cdr)
 
-    eval: (env=[]) ->
+    eval: (env=Env()) ->
         exp = Cell(this, Cell(null))
         stack = [{exp: Cell(exp, Cell(null)), env: env},
                  {exp: exp, env: env}]
@@ -164,7 +190,7 @@ class Cell
                 car = me.exp.car.copy()
                 me.exp.car = car
                 stack.push exp: car, env: me.env
-            else if me.exp.car.special == Cell._specialties['cond']
+            else if me.exp.car.special and me.exp.car.name == 'cond'
                 throw '(cond) with no body' if me.exp.cdr.null?
                 stack.pop()
                 condition = me.exp.cdr.car.car
@@ -200,15 +226,13 @@ class Cell
                 para = operator.procedure.cdr.car
                 body = operator.procedure.cdr.cdr.car.copy()
                 parent.exp.car = body
-                new_env = operator.env.concat frame(para, args)
-                #stack.push exp: body, env: Cell(List(para, args), operator.env)
+                new_env = operator.env.extend(Env(frame(para, args)))
                 stack.push exp: body, env: new_env
             else  # me.exp.car is not pair/special/primitive/procedure
                 me.exp.car = me.exp.car._eval me.env
                 # if not special or not in head position
                 if not me.exp.car.special? or parent.exp.car != me.exp
-                    if me.exp.cdr.null?
-                        # cannot continue right, restart
+                    if me.exp.cdr.null?  # cannot continue right, restart
                         me.exp = parent.exp.car
                     else  # continue right
                         cdr = me.exp.cdr.copy()
@@ -220,7 +244,7 @@ class Cell
                 return me.exp.car
 
     @evaluate: (source) ->
-        env = Cell.default_env()
+        env = Env()
         results = []
         line = 0
         while source != ''
@@ -240,47 +264,17 @@ class Cell
             results.push line: line, result: result
         return results
 
-    @default_env: ->
-        env = [{}]
-        for name, func of @_specialties
-            env[0][name] = special: func, name: name
-        for name, func of @_primitives
-            env[0][name] = primitive: func, name: name
-        return env
-
-    @_primitives:
-        'null?': (args) -> if args.car.null? then '#t' else '#f'
-        'atom?': (args) -> if args.car.atom? then '#t' else '#f'
-        'eq?': (args) -> if args.car.is_eq args.cdr.car then '#t' else '#f'
-        'cons': (args) -> Cell(args.car, args.cdr.car)
-        'car': (args) -> args.car.car
-        'cdr': (args) -> args.car.cdr
-        'zero?': (args) -> if args.car.number == 0 then '#t' else '#f'
-        'add1': (args) -> args.car.number + 1
-        'sub1': (args) -> args.car.number - 1
-        'number?': (args) -> if args.car.number? then '#t' else '#f'
-
-    @_specialties:
-        'quote': (args, env) -> args.car
-        'define': (args, env) ->
-            args.cdr.car = args.cdr.car.eval(env)
-            define(args, env)
-        'env': (args, env) -> env
-        'lambda': (args, env) -> procedure: Cell('lambda', args), env: env
-        'cond': (args, env) -> throw 'placeholder; should not be called'
-
     _write_pair: ->
-        if @cdr.null?
+        return if @cdr.null?
             "#{@car.write()}"
         else if @cdr.pair?
             "#{@car.write()} #{@cdr._write_pair()}"
         else if @cdr.write?
             "#{@car.write()} . #{@cdr.write()}"
-        else
-            '#<wtf>'
+        throw 'write pair error'
 
     write: ->
-        if @pair?
+        return if @pair?
             "(#{@_write_pair()})"
         else if @symbol?
             @symbol
@@ -292,26 +286,20 @@ class Cell
             '#' + @procedure.write()
         else if @primitive? or @special?
             '#' + @name
-        else
-            throw 'write error'
+        throw 'write error'
 
     is_eq: (other) ->
-        law = 'eq? takes two non-numeric atoms'
-        if @null? and other.null?
+        return if @null? and other.null?
             true
         else if @symbol? and other.symbol?
             @symbol == other.symbol
-        else
-            throw law
+        throw 'eq? takes two non-numeric atoms'
 
 
 List = (args...) ->
-    if args.length == 0
-        Cell(null)
-    else
-        Cell(args[0], List(args[1..]...))
+    if args.length == 0 then Cell(null) else Cell(args[0], List(args[1..]...))
 
 
-provide = {Cell, List, eval: Cell.evaluate}
+provide = {Cell, List, Env, eval: Cell.evaluate}
 module?.exports = provide
 window?.little = provide
