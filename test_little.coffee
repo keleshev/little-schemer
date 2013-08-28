@@ -192,3 +192,18 @@ test 'optimize procedure', ->
     assert Cell(proc).primitive?
     assert Cell(proc).write().indexOf('(lambda (a) (add1 (add1 a)))') != -1
     assert List(List('quote', proc), 1).eval().write() == '42'
+
+
+test 'optimized arithmetic', ->
+    source = '''
+             (define +
+               (lambda (n m)
+                 (cond ((zero? n) m)
+                        (else (+ (sub1 n) (add1 m))))))
+
+             (+ 1000000 2000000)
+             '''
+    assert.equal Cell.evaluate(source), [
+        {line: 3, result: 'ok'}
+        {line: 5, result: '3000000'}
+    ]

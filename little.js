@@ -18,12 +18,23 @@
     return newlines.length;
   };
 
-  optimize = function(name, value) {
+  optimize = function(name, value, env) {
+    var extended, original;
     if (name === '+' && (value.procedure != null)) {
-      if (List(value, 10, 20)["eval"]().number === 30) {
+      original = value.env;
+      extended = env.extend(Env({
+        '+': value
+      }));
+      value.env = extended;
+      if (extended.lookup('+') !== value) {
+        throw 'wat';
+      }
+      if (Cell.read("(+ 10 20)")["eval"](extended).number === 30) {
         return value.primitive = function(args) {
           return Cell(args.car.number + args.cdr.car.number);
         };
+      } else {
+        return value.env = original;
       }
     }
   };
@@ -60,7 +71,7 @@
     };
 
     Env.prototype.define = function(name, value) {
-      optimize(name, value);
+      optimize(name, value, this);
       this._env[this._env.length - 1][name] = value;
       return this;
     };

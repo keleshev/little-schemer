@@ -10,11 +10,17 @@ count_newlines = (source) ->
     return newlines.length
 
 
-optimize = (name, value) ->
+optimize = (name, value, env) ->
     if name == '+' and value.procedure?
-        if List(value, 10, 20).eval().number == 30
+        original = value.env
+        extended = env.extend(Env('+': value))
+        value.env = extended
+        throw 'wat' if extended.lookup('+') != value
+        if Cell.read("(+ 10 20)").eval(extended).number == 30
             value.primitive = (args) ->
                 Cell(args.car.number + args.cdr.car.number)
+        else
+            value.env = original
 
 
 frame = (para, args) ->
@@ -36,7 +42,7 @@ class Env
         other instanceof Env and json(@_env) == json(other._env)
 
     define: (name, value) ->
-        optimize(name, value)
+        optimize(name, value, this)
         @_env[@_env.length - 1][name] = value
         this
 
